@@ -1,0 +1,19 @@
+[package]
+name = "deconvolution-rs"
+version = "5.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+opt-level = 3
+# lto = "fat"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
+#target-cpu = "native" -> RUSTFLAGS='-C target-cpu=native'
+
+[dependencies]
+rand = "0.8.5"
+rayon = "1.7.0"
