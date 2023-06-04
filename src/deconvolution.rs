@@ -1,11 +1,10 @@
 //! Deconvolution.
 
 use crate::{
+    aliases_method_to_function::exp,
     antispikes::Antispikes,
     diff_function::DiffFunction,
     exponent_function::ExponentFunction,
-    aliases_method_to_function::exp,
-    deconvolution_params,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
     output_params,
@@ -26,11 +25,12 @@ pub enum Deconvolution {
     /// a1*exp(-(x-s1)/t1) + ...
     Exponents {
         diff_function_type: DiffFunction,
-        // exponents_amount: usize,
+        exponents_amount: usize,
         // initial_values: &'a [float],
         // initial_values: Vec<float>,
         // TODO(refactor): change to `&'static [float]`?
-        initial_values: [float; 3*deconvolution_params::EXPONENTS_AMOUNT], // ai, si, ti, ...
+        // initial_values: [float; 3*deconvolution_params::EXPONENTS_AMOUNT],
+        initial_values: Vec<float>, // ai, si, ti, ...
     },
     /// a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
     SatExp_DecExp {
@@ -176,8 +176,8 @@ impl<'a> Deconvolution {
 
         match self {
             Self::PerPoint { .. } => params.to_vec(),
-            Self::Exponents { .. } => {
-                assert_eq!(deconvolution_params::EXPONENTS_AMOUNT * 3, params.len());
+            Self::Exponents { exponents_amount, .. } => {
+                assert_eq!(exponents_amount * 3, params.len());
                 let exponents: Vec<ExponentFunction> = params
                     .chunks(3).into_iter()
                     .map(|parts| ExponentFunction { amplitude: parts[0], shift: parts[1], tau: parts[2] } )
@@ -318,10 +318,10 @@ impl<'a> Deconvolution {
         use output_params::SIGNIFICANT_DIGITS as SD;
         match self {
             Deconvolution::PerPoint { .. } => Err("impossible to build this function"),
-            Deconvolution::Exponents { .. } => {
+            Deconvolution::Exponents { exponents_amount, .. } => {
                 Ok([
                     r"f_{",
-                    &deconvolution_params::EXPONENTS_AMOUNT.to_string(),
+                    &exponents_amount.to_string(),
                     r"}\left(x\right)=",
                     &params
                         .chunks(3).into_iter()

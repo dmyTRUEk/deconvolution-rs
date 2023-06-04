@@ -35,8 +35,6 @@ mod deconvolution_params {
     use crate::diff_function::DiffFunction;
     use super::{Deconvolution, float};
 
-    pub const EXPONENTS_AMOUNT: usize = 2; // only for `Deconvolution::Exponents`.
-
     pub const DECONVOLUTION: Deconvolution = {
 
         // Deconvolution::PerPoint {
@@ -51,7 +49,7 @@ mod deconvolution_params {
 
         // Deconvolution::Exponents {
         //     diff_function_type: DiffFunctionType::DySqr,
-        //     // exponents_amount: 2,
+        //     exponents_amount: 2,
         //     initial_values: [
         //         // 30., -10., 30.,
         //         // 30., 1., -2.,
@@ -225,18 +223,19 @@ fn main() {
     loop {
         initial_values_tried += 1;
         let mut deconvolution_data = deconvolution_data.clone();
-        fn randomize_array<const N: usize>(array: &mut [float; N], rng: &mut ThreadRng) {
-            for i in 0..N {
+        fn randomize_array(array: &mut [float], rng: &mut ThreadRng) {
+            for i in 0..array.len() {
                 let is_change_sign: bool = rng.gen_bool(deconvolution_params::CHANGE_SING_PROBABILITY);
                 let random_scale: float = rng.gen_range(
-                    1./deconvolution_params::INITIAL_VALUES_RANDOM_SCALE ..= deconvolution_params::INITIAL_VALUES_RANDOM_SCALE
+                    1./deconvolution_params::INITIAL_VALUES_RANDOM_SCALE
+                    ..=deconvolution_params::INITIAL_VALUES_RANDOM_SCALE
                 );
                 array[i] *= if is_change_sign { -1. } else { 1. } * random_scale;
             }
         }
         match deconvolution_data.deconvolution {
             Deconvolution::PerPoint { .. } => panic!("there is no need to try different initial params"),
-            Deconvolution::Exponents { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
+            Deconvolution::Exponents { ref mut initial_values, .. } => randomize_array(&mut initial_values[..], &mut rng),
             Deconvolution::SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
             Deconvolution::Two_SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
             Deconvolution::SatExp_DecExpPlusConst { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
