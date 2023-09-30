@@ -1,5 +1,9 @@
 //! Deconvolution.
 
+use std::cmp::Ordering;
+
+use toml::Value as TomlValue;
+
 use crate::{
     aliases_method_to_function::exp,
     antispikes::Antispikes,
@@ -7,7 +11,7 @@ use crate::{
     exponent_function::ExponentFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
-    output_params,
+    utils_io::format_by_dollar_str, config::Load,
 };
 
 
@@ -15,13 +19,13 @@ use crate::{
 #[allow(dead_code, non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Deconvolution {
-    /// aka Simple
     /// [y0, y1, y2, ...]
     PerPoint {
         diff_function_type: DiffFunction,
         antispikes: Option<Antispikes>,
         initial_value: float, // [y0, y1, y2, ...]
     },
+
     /// a1*exp(-(x-s1)/t1) + ...
     Exponents {
         diff_function_type: DiffFunction,
@@ -32,18 +36,22 @@ pub enum Deconvolution {
         // initial_values: [float; 3*deconvolution_params::EXPONENTS_AMOUNT],
         initial_values: Vec<float>, // ai, si, ti, ...
     },
+
     /// a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
     SatExp_DecExp {
         diff_function_type: DiffFunction,
         // TODO(refactor): save initial params as struct with named fields, not stupid array.
-        initial_values: [float; 4], // a, s, ta, tb
+        // initial_values: [float; 4], // a, s, ta, tb
+        initial_values: [float; 3], // s, ta, tb
         // initial_values: { a: float, s: float, tau_a: float, tau_b: float },
     },
+
     /// a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
     Two_SatExp_DecExp {
         diff_function_type: DiffFunction,
         initial_values: [float; 8], // a1, s1, ta1, tb1, a2, s2, ta2, tb2
     },
+
     /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + h)
     SatExp_DecExpPlusConst {
         diff_function_type: DiffFunction,
@@ -51,32 +59,34 @@ pub enum Deconvolution {
         initial_values: [float; 5], // a, s, h, ta, tb
         allow_tb_less_than_ta: bool,
     },
+
     /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + exp(-(x-s)/tc))
     SatExp_TwoDecExp {
         diff_function_type: DiffFunction,
         initial_values: [float; 5], // a, s, ta, tb, tc
     },
+
     /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + exp(-(x-s)/tc) + h)
     SatExp_TwoDecExpPlusConst {
         diff_function_type: DiffFunction,
         initial_values: [float; 6], // a, s, h, ta, tb, tc
     },
+
     /// (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
     SatExp_TwoDecExp_SeparateConsts {
         diff_function_type: DiffFunction,
         initial_values: [float; 6], // b, c, s, ta, tb, tc
     },
+
     Fourier {
         // unimplemented
     },
 }
 
 impl<'a> Deconvolution {
-    pub const SAT_DEC_EXP_AMPLITUDE_SCALE: float = 1. / 1.;
-
     pub fn get_name(&self) -> &'static str {
         match self {
-            Deconvolution::PerPoint { .. } => todo!(),
+            Deconvolution::PerPoint { .. } => "per point",
             Deconvolution::Exponents { .. } => "exponents",
             Deconvolution::SatExp_DecExp { .. } => "saturated decaying exponential",
             Deconvolution::Two_SatExp_DecExp { .. } => "two saturated decaying exponentials",
@@ -124,13 +134,16 @@ impl<'a> Deconvolution {
                 amplitude >= 0.
             }),
             Deconvolution::SatExp_DecExp { .. } => {
-                let (amplitude, _, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
-                amplitude >= 0. && tau_a >= 0. && tau_b >= 0.
+                // let (amplitude, _, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
+                let (_, tau_a, tau_b) = (params[0], params[1], params[2]);
+                // amplitude >= 0. && tau_a >= 0. && tau_b >= 0.
+                tau_a >= 0. && tau_b >= 0.
             }
             Deconvolution::Two_SatExp_DecExp { .. } => {
-                let (amplitude_1, _, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
-                let (amplitude_2, _, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
+                let (amplitude_1, shift_1, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
+                let (amplitude_2, shift_2, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
                 amplitude_1 >= 0. && tau_a1 >= 0. && tau_b1 >= 0. &&
+                shift_1 < shift_2 &&
                 amplitude_2 >= 0. && tau_a2 >= 0. && tau_b2 >= 0.
             }
             Deconvolution::SatExp_DecExpPlusConst { allow_tb_less_than_ta, .. } => {
@@ -194,17 +207,14 @@ impl<'a> Deconvolution {
             }
             Self::SatExp_DecExp { .. } => {
                 let mut points = vec![0.; points_len];
-                let (amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
+                // let (_amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
+                let (shift, tau_a, tau_b) = (params[0], params[1], params[2]);
                 for i in 0..points_len {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift: float = x - shift;
                     // let y = if x >= shift
-                    let y = if x_m_shift >= 0. {
-                        // "optimization" (don't work): precalc `1/tau_a` & `1/tau_b`.
-                        Self::SAT_DEC_EXP_AMPLITUDE_SCALE * amplitude * (1. - exp(-x_m_shift/tau_a)) * exp(-x_m_shift/tau_b)
-                    } else {
-                        0.
-                    };
+                    // "optimization" (don't work): precalc `1/tau_a` & `1/tau_b`.
+                    let y = ( (1. - exp(-x_m_shift/tau_a)) * exp(-x_m_shift/tau_b) ).max(0.);
                     points[i] = y;
                 }
                 points
@@ -217,16 +227,8 @@ impl<'a> Deconvolution {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift_1: float = x - shift_1;
                     let x_m_shift_2: float = x - shift_2;
-                    let y1 = if x_m_shift_1 >= 0. {
-                        Self::SAT_DEC_EXP_AMPLITUDE_SCALE * amplitude_1 * (1. - exp(-(x_m_shift_1)/tau_a1)) * exp(-(x_m_shift_1)/tau_b1)
-                    } else {
-                        0.
-                    };
-                    let y2 = if x_m_shift_2 >= 0. {
-                        Self::SAT_DEC_EXP_AMPLITUDE_SCALE * amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2)
-                    } else {
-                        0.
-                    };
+                    let y1 = ( amplitude_1 * (1. - exp(-(x_m_shift_1)/tau_a1)) * exp(-(x_m_shift_1)/tau_b1) ).max(0.);
+                    let y2 = ( amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2) ).max(0.);
                     points[i] = y1 + y2;
                 }
                 points
@@ -237,11 +239,7 @@ impl<'a> Deconvolution {
                 for i in 0..points_len {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift: float = x - shift;
-                    let y = if x_m_shift >= 0. {
-                        amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + height)
-                    } else {
-                        0.
-                    };
+                    let y = ( amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + height) ).max(0.);
                     points[i] = y;
                 }
                 points
@@ -252,11 +250,7 @@ impl<'a> Deconvolution {
                 for i in 0..points_len {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift: float = x - shift;
-                    let y = if x_m_shift >= 0. {
-                        amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c))
-                    } else {
-                        0.
-                    };
+                    let y = ( amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c)) ).max(0.);
                     points[i] = y;
                 }
                 points
@@ -267,11 +261,7 @@ impl<'a> Deconvolution {
                 for i in 0..points_len {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift: float = x - shift;
-                    let y = if x_m_shift >= 0. {
-                        amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c) + height)
-                    } else {
-                        0.
-                    };
+                    let y = ( amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c) + height) ).max(0.);
                     points[i] = y;
                 }
                 points
@@ -282,11 +272,7 @@ impl<'a> Deconvolution {
                 for i in 0..points_len {
                     let x: float = i_to_x(i, points_len, (x_start, x_end));
                     let x_m_shift: float = x - shift;
-                    let y = if x_m_shift >= 0. {
-                        (1. - exp(-x_m_shift/tau_a)) * (b*exp(-x_m_shift/tau_b) + c*exp(-x_m_shift/tau_c))
-                    } else {
-                        0.
-                    };
+                    let y = ( (1. - exp(-x_m_shift/tau_a)) * (b*exp(-x_m_shift/tau_b) + c*exp(-x_m_shift/tau_c)) ).max(0.);
                     points[i] = y;
                 }
                 points
@@ -314,218 +300,384 @@ impl<'a> Deconvolution {
         }
     }
 
-    pub fn to_desmos_function(&self, params: &Vec<float>) -> Result<String, &'static str> {
-        use output_params::SIGNIFICANT_DIGITS as SD;
-        match self {
-            Deconvolution::PerPoint { .. } => Err("impossible to build this function"),
-            Deconvolution::Exponents { exponents_amount, .. } => {
-                Ok([
-                    r"f_{",
-                    &exponents_amount.to_string(),
-                    r"}\left(x\right)=",
-                    &params
-                        .chunks(3).into_iter()
-                        .map(|parts| {
-                            let (amplitude, shift, tau) = (parts[0], parts[1], parts[2]);
-                            let neg_shift = -shift;
-                            assert_ne!(0., tau);
-                            [
-                                r"\left\{x",
-                                if tau > 0. { ">" } else { "<" },
-                                &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                                r":\frac{",
-                                &format!("{}", amplitude.to_string_with_significant_digits(SD)),
-                                r"}{",
-                                &format!("{}", (1./ExponentFunction::AMPLITUDE_SCALE).to_string_with_significant_digits(SD)),
-                                r"}e^{-\frac{x",
-                                if neg_shift.is_sign_positive() { "+" } else { "" },
-                                &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                                r"}{",
-                                &format!("{}", tau.to_string_with_significant_digits(SD)),
-                                r"}},0\right\}",
-                            ].concat()
-                        })
-                        .reduce(|acc, el| format!("{acc}+{el}")).unwrap(),
-                ].concat())
+    // TODO: tests, check if they are work in desmos
+    pub fn to_desmos_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
+        let sd = significant_digits as usize;
+        if let Deconvolution::PerPoint { .. } = self { return Err("not plottable") };
+        Ok(format!("y=") + &match self {
+            Deconvolution::PerPoint { .. } => unreachable!(),
+            Deconvolution::Exponents { .. } => {
+                params
+                    .chunks(3).into_iter()
+                    .map(|parts| {
+                        let (amplitude, shift, tau) = (parts[0], parts[1], parts[2]);
+                        let neg_shift = -shift;
+                        assert_ne!(0., tau);
+                        format_by_dollar_str(
+                            r"\left\{x$comp$ns:0,\frac{$a}{$sc}e^{-\frac{x$p$ns}{$t}}\right\}",
+                            vec![
+                                ("a", &amplitude.to_string_with_significant_digits(sd)),
+                                ("comp", if tau > 0. { "<" } else { ">" }),
+                                ("ns", &neg_shift.to_string_with_significant_digits(sd)),
+                                ("p", if neg_shift.is_sign_positive() { "+" } else { "" }),
+                                ("sc", &(1./ExponentFunction::AMPLITUDE_SCALE).to_string_with_significant_digits(sd)),
+                                ("t", &tau.to_string_with_significant_digits(sd)),
+                            ]
+                        );
+                        todo!("rewrite using `max(0,…)`");
+                    })
+                    .reduce(|acc, el| format!("{acc}+{el}")).unwrap()
             }
             Deconvolution::SatExp_DecExp { .. } => {
-                let (amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
-                let neg_shift = -shift;
-                Ok([
-                    // y=a\left(1-e^{-\frac{x-s}{t_{1}}}\right)\left(e^{-\frac{x-s-d}{t_{2}}}\right)\left\{x>s\right\}
-                    r"y=\frac{",
-                    &format!("{}", amplitude.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", (1./Deconvolution::SAT_DEC_EXP_AMPLITUDE_SCALE).to_string_with_significant_digits(SD)),
-                    r"}\left(1-e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left\{x\ge",
-                    &format!("{}", shift.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                // let (_amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
+                let (shift, tau_a, tau_b) = (params[0], params[1], params[2]);
+                format_by_dollar_str(
+                    r"max(0,\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}\right))",
+                    vec![
+                        ("pm", if !shift.is_sign_positive() { "+" } else { "-" }),
+                        ("s", &format!("{}", shift.abs().to_string_with_significant_digits(sd))),
+                        ("ta", &format!("{}", tau_a.to_string_with_significant_digits(sd))),
+                        ("tb", &format!("{}", tau_b.to_string_with_significant_digits(sd))),
+                    ]
+                )
             }
             Deconvolution::Two_SatExp_DecExp { .. } => {
                 let (amplitude_1, shift_1, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
                 let (amplitude_2, shift_2, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
-                let neg_shift_1 = -shift_1;
-                let neg_shift_2 = -shift_2;
-                Ok([
-                    r"y=\frac{",
-                    &format!("{}", amplitude_1.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", (1./Deconvolution::SAT_DEC_EXP_AMPLITUDE_SCALE).to_string_with_significant_digits(SD)),
-                    r"}\left(1-e^{-\frac{x",
-                    if neg_shift_1.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift_1.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a1.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift_1.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift_1.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b1.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left\{x\ge",
-                    &format!("{}", shift_1.to_string_with_significant_digits(SD)),
-                    r"\right\}+\frac{",
-                    &format!("{}", amplitude_2.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", (1./Deconvolution::SAT_DEC_EXP_AMPLITUDE_SCALE).to_string_with_significant_digits(SD)),
-                    r"}\left(1-e^{-\frac{x",
-                    if neg_shift_2.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift_2.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a2.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift_2.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift_2.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b2.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left\{x\ge",
-                    &format!("{}", shift_2.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                format_by_dollar_str(
+                    &[
+                        r"max(0,$a1\left(1-e^{-\frac{x$pm1$s1}{$ta1}}\right)\left(e^{-\frac{x$pm1$s1}{$tb1}}\right))",
+                        r"+",
+                        r"max(0,$a2\left(1-e^{-\frac{x$pm2$s2}{$ta2}}\right)\left(e^{-\frac{x$pm2$s2}{$tb2}}\right))"
+                    ].concat(),
+                    vec![
+                        ("a1", &amplitude_1.to_string_with_significant_digits(sd)),
+                        ("pm1", if !shift_1.is_sign_positive() { "+" } else { "-" }),
+                        ("s1", &shift_1.abs().to_string_with_significant_digits(sd)),
+                        ("ta1", &tau_a1.to_string_with_significant_digits(sd)),
+                        ("tb1", &tau_b1.to_string_with_significant_digits(sd)),
+
+                        ("a2", &amplitude_2.to_string_with_significant_digits(sd)),
+                        ("pm2", if !shift_2.is_sign_positive() { "+" } else { "-" }),
+                        ("s2", &shift_2.abs().to_string_with_significant_digits(sd)),
+                        ("ta2", &tau_a2.to_string_with_significant_digits(sd)),
+                        ("tb2", &tau_b2.to_string_with_significant_digits(sd)),
+                    ]
+                )
             }
             Deconvolution::SatExp_DecExpPlusConst { .. } => {
                 let (amplitude, shift, height, tau_a, tau_b) = (params[0], params[1], params[2], params[3], params[4]);
-                let neg_shift = -shift;
-                Ok([
-                    r"y=",
-                    &format!("{}", amplitude.to_string_with_significant_digits(SD)),
-                    r"\left(1-e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b.to_string_with_significant_digits(SD)),
-                    r"}}+",
-                    &format!("{}", height.to_string_with_significant_digits(SD)),
-                    r"\right)\left\{x\ge",
-                    &format!("{}", shift.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                format_by_dollar_str(
+                    r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}+$h\right))",
+                    vec![
+                        ("a", &amplitude.to_string_with_significant_digits(sd)),
+                        ("h", &height.to_string_with_significant_digits(sd)),
+                        ("pm", if !shift.is_sign_positive() { "+" } else { "-" }),
+                        ("s", &shift.abs().to_string_with_significant_digits(sd)),
+                        ("ta", &tau_a.to_string_with_significant_digits(sd)),
+                        ("tb", &tau_b.to_string_with_significant_digits(sd)),
+                    ]
+                )
             }
             Deconvolution::SatExp_TwoDecExp { .. } => {
                 let (amplitude, shift, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4]);
-                let neg_shift = -shift;
-                Ok([
-                    r"y=",
-                    &format!("{}", amplitude.to_string_with_significant_digits(SD)),
-                    r"\left(1-e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b.to_string_with_significant_digits(SD)),
-                    r"}}+e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_c.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left\{x\ge",
-                    &format!("{}", shift.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                format_by_dollar_str(
+                    r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}+e^{-\frac{x$pm$s}{$tc}}\right))",
+                    vec![
+                        ("a", &amplitude.to_string_with_significant_digits(sd)),
+                        ("pm", if !shift.is_sign_positive() { "+" } else { "-" }),
+                        ("s", &shift.abs().to_string_with_significant_digits(sd)),
+                        ("ta", &tau_a.to_string_with_significant_digits(sd)),
+                        ("tb", &tau_b.to_string_with_significant_digits(sd)),
+                        ("tc", &tau_c.to_string_with_significant_digits(sd)),
+                    ]
+                )
             }
             Deconvolution::SatExp_TwoDecExpPlusConst { .. } => {
                 let (amplitude, shift, height, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4], params[5]);
-                let neg_shift = -shift;
-                Ok([
-                    r"y=",
-                    &format!("{}", amplitude.to_string_with_significant_digits(SD)),
-                    r"\left(1-e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b.to_string_with_significant_digits(SD)),
-                    r"}}+e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_c.to_string_with_significant_digits(SD)),
-                    r"}}",
-                    if height.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", height.to_string_with_significant_digits(SD)),
-                    r"\right)\left\{x\ge",
-                    &format!("{}", shift.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                format_by_dollar_str(
+                    r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}+e^{-\frac{x$pm$s}{$tc}}$pmh$h\right))",
+                    vec![
+                        ("a", &amplitude.to_string_with_significant_digits(sd)),
+                        ("h", &height.abs().to_string_with_significant_digits(sd)),
+                        ("pm", if !shift.is_sign_positive() { "+" } else { "-" }),
+                        ("pmh", if height.is_sign_positive() { "+" } else { "-" }),
+                        ("s", &shift.abs().to_string_with_significant_digits(sd)),
+                        ("ta", &tau_a.to_string_with_significant_digits(sd)),
+                        ("tb", &tau_b.to_string_with_significant_digits(sd)),
+                        ("tc", &tau_c.to_string_with_significant_digits(sd)),
+                    ]
+                )
             }
             Deconvolution::SatExp_TwoDecExp_SeparateConsts { .. } => {
+                // let (a, b, c, shift, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4], params[5], params[6]);
                 let (b, c, shift, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4], params[5]);
-                let neg_shift = -shift;
-                Ok([
-                    r"y=\left(1-",
-                    // if a.is_sign_positive() { "-" } else { "+" },
-                    // &format!("{}", a.abs().to_string_with_significant_digits(SD)),
-                    r"e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_a.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left(",
-                    &format!("{}", b.to_string_with_significant_digits(SD)),
-                    r"e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_b.to_string_with_significant_digits(SD)),
-                    r"}}",
-                    if c.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", c.to_string_with_significant_digits(SD)),
-                    r"e^{-\frac{x",
-                    if neg_shift.is_sign_positive() { "+" } else { "" },
-                    &format!("{}", neg_shift.to_string_with_significant_digits(SD)),
-                    r"}{",
-                    &format!("{}", tau_c.to_string_with_significant_digits(SD)),
-                    r"}}\right)\left\{x\ge",
-                    &format!("{}", shift.to_string_with_significant_digits(SD)),
-                    r"\right\}",
-                ].concat())
+                format_by_dollar_str(
+                    r"max(0,\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left($be^{-\frac{x$pm$s}{$tb}}$pmc$ce^{-\frac{x$pm$s}{$tc}}\right))",
+                    vec![
+                        ("b", &b.to_string_with_significant_digits(sd)),
+                        ("c", &c.abs().to_string_with_significant_digits(sd)),
+                        ("pm", if !shift.is_sign_positive() { "+" } else { "-" }),
+                        ("pmc", if c.is_sign_positive() { "+" } else { "-" }),
+                        ("s", &shift.abs().to_string_with_significant_digits(sd)),
+                        ("ta", &tau_a.to_string_with_significant_digits(sd)),
+                        ("tb", &tau_b.to_string_with_significant_digits(sd)),
+                        ("tc", &tau_c.to_string_with_significant_digits(sd)),
+                    ]
+                )
             }
             Deconvolution::Fourier {} => unimplemented!(),
-        }
+        })
     }
 }
 
+
+impl Load for Deconvolution {
+    fn load_from_toml_value(toml_value: TomlValue) -> Self {
+        let deconvolution_functions = [
+            toml_value.get("PerPoint"),
+            toml_value.get("Exponents"),
+            toml_value.get("SatExp_DecExp"),
+            toml_value.get("Two_SatExp_DecExp"),
+            toml_value.get("SatExp_DecExpPlusConst"),
+            toml_value.get("SatExp_TwoDecExp"),
+            toml_value.get("SatExp_TwoDecExpPlusConst"),
+            toml_value.get("SatExp_TwoDecExp_SeparateConsts"),
+        ];
+        let deconvolution_functions_number = deconvolution_functions.map(|dfv| dfv.is_some()).iter().filter(|&&tf| tf == true).count();
+        match deconvolution_functions_number.cmp(&1) {
+            Ordering::Less => panic!("no `deconvolution_function`s found"),
+            Ordering::Greater => panic!("too many `deconvolution_function`s found"),
+            Ordering::Equal => {}
+        }
+        if let Some(toml_value) = toml_value.get("PerPoint") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> PerPoint: `diff_function_type` not found")
+                    .clone()
+            );
+            let antispikes = if let Some(toml_value) = toml_value.get("antispikes") {
+                Some(Antispikes::load_from_toml_value(toml_value.clone()))
+            } else {
+                None
+            };
+            let initial_value = toml_value
+                .get("initial_value")
+                .expect("deconvolution_function -> PerPoint: `initial_value` not found")
+                .as_float()
+                .expect("deconvolution_function -> PerPoint -> initial_value: can't parse as float");
+            Self::PerPoint {
+                diff_function_type,
+                antispikes,
+                initial_value,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("Exponents") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> Exponents: `diff_function_type` not found")
+                    .clone()
+            );
+            let exponents_amount = toml_value
+                .get("exponents_amount")
+                .expect("deconvolution_function -> Exponents: `exponents_amount` not found")
+                .as_integer()
+                .expect("deconvolution_function -> Exponents -> exponents_amount: can't parse as integer");
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> Exponents: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> Exponents -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> Exponents -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect();
+            assert!(exponents_amount >= usize::MIN as i64);
+            assert!(exponents_amount <= usize::MAX as i64);
+            let exponents_amount = exponents_amount as usize;
+            Self::Exponents {
+                diff_function_type,
+                exponents_amount,
+                initial_values,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("SatExp_DecExp") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> SatExp_DecExp: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> SatExp_DecExp: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> SatExp_DecExp -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..3]
+                .try_into()
+                .expect("deconvolution_function -> SatExp_DecExp -> initial_values: len != 3");
+            Self::SatExp_DecExp {
+                diff_function_type,
+                initial_values,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("Two_SatExp_DecExp") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> Two_SatExp_DecExp: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> Two_SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..8]
+                .try_into()
+                .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: len != 8");
+            Self::Two_SatExp_DecExp {
+                diff_function_type,
+                initial_values,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("SatExp_DecExpPlusConst") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> SatExp_DecExpPlusConst: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..5]
+                .try_into()
+                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: len != 5");
+            let allow_tb_less_than_ta = toml_value
+                .get("allow_tb_less_than_ta")
+                .expect("deconvolution_function -> SatExp_DecExpPlusConst: `allow_tb_less_than_ta` not found")
+                .as_bool()
+                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> allow_tb_less_than_ta: can't parse as boolean");
+            Self::SatExp_DecExpPlusConst {
+                diff_function_type,
+                initial_values,
+                allow_tb_less_than_ta,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExp") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> SatExp_TwoDecExp: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> SatExp_TwoDecExp: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExp -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..5]
+                .try_into()
+                .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: len != 5");
+            Self::SatExp_TwoDecExp {
+                diff_function_type,
+                initial_values,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExpPlusConst") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..6]
+                .try_into()
+                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: len != 6");
+            Self::SatExp_TwoDecExpPlusConst {
+                diff_function_type,
+                initial_values,
+            }
+        }
+        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExp_SeparateConsts") {
+            let diff_function_type = DiffFunction::load_from_toml_value(
+                toml_value
+                    .get("diff_function_type")
+                    .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `diff_function_type` not found")
+                    .clone()
+            );
+            let initial_values = toml_value
+                .get("initial_values")
+                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `initial_values` not found")
+                .as_array()
+                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: can't parse as list")
+                .iter()
+                .enumerate()
+                .map(|(i, initial_value)| {
+                    initial_value
+                        .as_float()
+                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values[{i}]: can't parse as float"))
+                })
+                .collect::<Vec<_>>()[..6]
+                .try_into()
+                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: len != 6");
+            Self::SatExp_TwoDecExp_SeparateConsts {
+                diff_function_type,
+                initial_values,
+            }
+        }
+        else {
+            panic!("`deconvolution_function` not found")
+        }
+    }
+}
 

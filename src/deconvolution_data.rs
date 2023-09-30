@@ -3,10 +3,12 @@
 use std::cmp::Ordering;
 
 use crate::{
+    config::Config,
+    convolution::convolve_by_points,
     deconvolution::Deconvolution,
     fit_algorithm::{FitAlgorithm, FitResultOrError},
     float_type::float,
-    spectrum::Spectrum, convolution::convolve_by_points,
+    spectrum::Spectrum,
 };
 
 
@@ -96,9 +98,9 @@ impl DeconvolutionData {
 
     // TODO: align_steps_to_bigger, align_steps_to_smaller
 
-    pub fn deconvolve(&self, fit_algorithm_type: FitAlgorithm) -> DeconvolutionResultOrError {
+    pub fn deconvolve(&self, fit_algorithm: &FitAlgorithm) -> DeconvolutionResultOrError {
         self.assert_steps_is_aligned();
-        fit_algorithm_type.fit(&self)
+        fit_algorithm.fit(&self)
     }
 
     /// Depending on the `self.deconvolution` `params` is:

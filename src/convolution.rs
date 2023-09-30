@@ -596,15 +596,22 @@ mod deconvolve {
             Spectrum,
             deconvolution_data::DeconvolutionResultOrError,
             diff_function::DiffFunction,
-            fit_algorithm::FitAlgorithm,
+            fit_algorithm::{FitAlgorithm, PatternSearchParams},
             float,
         };
-        const FIT_ALGORITHM_TYPE: FitAlgorithm = FitAlgorithm::PatternSearch;
         const DECONVOLUTION: Deconvolution = Deconvolution::PerPoint {
             diff_function_type: DiffFunction::DySqr,
             antispikes: None,
             initial_value: 0.,
         };
+        const FIT_ALGORITHM: FitAlgorithm = FitAlgorithm::PatternSearch(PatternSearchParams {
+            fit_algorithm_min_step: 1e-4,
+            fit_residue_evals_max: 1_000_000,
+            fit_residue_max_value: 1e6,
+            initial_step: 1.,
+            alpha: 1.1,
+            beta: None,
+        });
         fn deconvolve(points_instrument: Vec<float>, points_spectrum: Vec<float>) -> DeconvolutionResultOrError {
             let instrument: Spectrum = Spectrum {
                 points: points_instrument,
@@ -621,7 +628,7 @@ mod deconvolve {
                 measured,
                 deconvolution: DECONVOLUTION,
             };
-            deconvolution_data.deconvolve(FIT_ALGORITHM_TYPE)
+            deconvolution_data.deconvolve(&FIT_ALGORITHM)
         }
         mod instrument_is_identity {
             use super::*;

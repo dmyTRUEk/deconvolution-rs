@@ -1,6 +1,9 @@
 //! Antispikes.
 
-use crate::float_type::float;
+use crate::{
+    config::Load,
+    float_type::float,
+};
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,6 +55,13 @@ impl AntispikesType {
                 res
             }
         }
+    }
+}
+
+
+impl Load for Antispikes {
+    fn load_from_toml_value(toml_value: toml::Value) -> Self {
+        todo!()
     }
 }
 

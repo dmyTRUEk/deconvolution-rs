@@ -1,9 +1,16 @@
 //! Diff Function.
 
-use crate::{float_type::float, antispikes::Antispikes};
+use std::str::FromStr;
+
+use crate::{
+    antispikes::Antispikes,
+    config::Load,
+    float_type::float,
+};
+
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DiffFunction {
     DySqr,
     DyAbs,
@@ -47,6 +54,32 @@ impl DiffFunction {
             |antispikes| antispikes.calc(points_1, points_2)
         );
         diff_main + diff_antispikes
+    }
+}
+
+
+impl FromStr for DiffFunction {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "DySqr" | "dy_sqr" => Ok(Self::DySqr),
+            "DyAbs" | "dy_abs" => Ok(Self::DyAbs),
+            "DySqrPerEl" | "dy_sqr_per_el" => Ok(Self::DySqrPerEl),
+            "DyAbsPerEl" | "dy_abs_per_el" => Ok(Self::DyAbsPerEl),
+            "LeastDist" | "least_dist" => Ok(Self::LeastDist),
+            _ => Err(())
+        }
+    }
+}
+
+
+impl Load for DiffFunction {
+    fn load_from_toml_value(toml_value: toml::Value) -> Self {
+        DiffFunction::from_str(
+            toml_value
+                .as_str()
+                .expect("diff_function_type: can't parse as string")
+        ).expect("diff_function_type: unknown type")
     }
 }
 

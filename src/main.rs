@@ -3,7 +3,7 @@
 use std::{
     env,
     fs::File,
-    io::{Write, BufReader, BufRead},
+    io::{BufRead, BufReader, Write},
     path::Path,
 };
 
@@ -11,6 +11,7 @@ use rand::{Rng, rngs::ThreadRng, thread_rng};
 
 mod aliases_method_to_function;
 mod antispikes;
+mod config;
 mod convolution;
 mod deconvolution;
 mod deconvolution_data;
@@ -22,122 +23,19 @@ mod float_type;
 mod spectrum;
 mod utils_io;
 
+use config::Config;
 use deconvolution::Deconvolution;
 use deconvolution_data::DeconvolutionData;
-use extensions::ToStringUnderscoreSeparated;
+use extensions::{IndexOfMax, ToStringUnderscoreSeparated};
 use fit_algorithm::FitResult;
 use float_type::float;
 use spectrum::Spectrum;
 use utils_io::flush;
 
 
-mod deconvolution_params {
-    use crate::diff_function::DiffFunction;
-    use super::{Deconvolution, float};
-
-    pub const DECONVOLUTION: Deconvolution = {
-
-        // Deconvolution::PerPoint {
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     // antispikes: None,
-        //     antispikes: Some(Antispikes {
-        //         antispikes_type: AntispikesType::DySqr,
-        //         antispikes_k: 1.,
-        //     }),
-        //     initial_value: 0.,
-        // }
-
-        // Deconvolution::Exponents {
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     exponents_amount: 2,
-        //     initial_values: [
-        //         // 30., -10., 30.,
-        //         // 30., 1., -2.,
-        //         1., 1., 1.,
-        //         1., 1., 1.,
-        //     ],
-        // }
-
-        // Deconvolution::SatExp_DecExp {
-        //     // WARNING?: set `FIT_ALGORITHM_MIN_STEP` to `1e-3`.
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     //               a   s   t1  t2
-        //     // initial_values: [1., 0., 1., 1.],
-        //     // initial_values: [0.04, -12., 1., 30.], // fr: 1.870
-        //     // initial_values: [1., 1., 1., 1.],
-        //     initial_values: [0.1, -10., 1., 10.],
-        // }
-
-        // Deconvolution::Two_SatExp_DecExp {
-        //     // WARNING?: set `FIT_ALGORITHM_MIN_STEP` to `1e-3`.
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     initial_values: [
-        //         100., -10., 100., 10.,
-        //         100., -10., 100., 10.,
-        //     ],
-        // }
-
-        // Deconvolution::SatExp_DecExpPlusConst {
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     initial_values: [0.1, -1., 1e-2, 0.1, 10.],
-        //     allow_tb_less_than_ta: false,
-        // }
-
-        // Deconvolution::SatExp_TwoDecExp {
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     // initial_values: [0.1, -10., 0.01, 1., 1.],
-        //     initial_values: [0.02, -9., 6e-6, 35., 8.],
-        // }
-
-        // Deconvolution::SatExp_TwoDecExpPlusConst {
-        //     diff_function_type: DiffFunctionType::DySqr,
-        //     // initial_values: [0.1, -5., 1e-2, 0.1, 10., 20.],    // ../data3/AIS3col_e650.dat
-        //     initial_values: [0.01, -10., 0.1, 5e-3, 5., 20.],      // ../data3/AIS3fil_e650.dat
-        //     // initial_values: [0.03, -8., 0.085, 5e-3, 6., 18.3], // ../data3/AIS3fil_e650.dat
-        // }
-
-        Deconvolution::SatExp_TwoDecExp_SeparateConsts {
-            diff_function_type: DiffFunction::DySqr,
-            // initial_values: [0.1, -10., 0.01, 1., 1.],
-            initial_values: [0.02, 0.02, -9., 0.1, 35., 100.],
-        }
-
-    };
-
-    pub const TRY_RANDOMIZED_INITIAL_VALUES: bool = false;
-    pub const INITIAL_VALUES_RANDOM_SCALE: float = 10.;
-    pub const CHANGE_SING_PROBABILITY: float = 0.05;
-}
-
-mod output_params {
-    pub const SIGNIFICANT_DIGITS: usize = 4;
-}
-
-mod fit_params {
-    use super::{fit_algorithm::FitAlgorithm, float};
-    // pub const INITIAL_VALUES: float = 0.0015;
-    pub const FIT_ALGORITHM_TYPE: FitAlgorithm = FitAlgorithm::PatternSearch;
-    // pub const FIT_RESIDUE_GOAL   : float = 1e-1; // for Pattern Search
-    pub const FIT_ALGORITHM_MIN_STEP: float = 1e-4; // for Pattern Search & Downhill Simplex
-    pub const FIT_RESIDUE_EVALS_MAX : u64 = 1_000_000;
-    pub const FIT_RESIDUE_MAX_VALUE : float = 1e6;
-}
-
-mod pattern_search_params {
-    use super::float;
-    pub const INITIAL_STEP: float = 1.;
-    pub const ALPHA: float = 1.1;        // step increase coefficient
-    pub const BETA : float = 1. / ALPHA; // step decrease coefficient
-}
-
-mod downhill_simplex_params {
-    use super::{diff_function::DiffFunction, float};
-    pub const INITIAL_SIMPLEX_SCALE: float = 0.815;
-    pub const PARAMS_DIFF_TYPE: DiffFunction = DiffFunction::DySqr;
-}
-
-
 fn main() {
+    let config = Config::load_from_default_file();
+
     let args: Vec<_> = env::args().collect();
     let (filepathstr_instrument, filepathstr_measured): (&str, &str) = match &args[..] {
         [_, filepathstr_instrument, filepathstr_measured] => (filepathstr_instrument, filepathstr_measured),
@@ -150,6 +48,8 @@ fn main() {
     print!("Loading instrumental spectrum  from `{}`...", filepathstr_instrument); flush();
     let instrument = Spectrum::load_from_file(filepathstr_instrument);
     println!(" done");
+    assert_eq!(1, instrument.points.len() % 2, "must be odd number of points");
+    assert_eq!(instrument.points.len()/2, instrument.points.index_of_max().unwrap(), "max must be at center");
 
     print!("Loading spectrum to deconvolve from `{}`...", filepathstr_measured); flush();
     let measured = Spectrum::load_from_file(filepathstr_measured);
@@ -158,12 +58,8 @@ fn main() {
     // TODO: warning if points in instr more than in spectrum.
     // assert!(measured.points.len() > instrument.points.len());
 
-    println!("FIT_ALGORITHM_TYPE    : {:#?}", fit_params::FIT_ALGORITHM_TYPE);
-    println!("FIT_ALGORITHM_MIN_STEP: {:.2e}", fit_params::FIT_ALGORITHM_MIN_STEP);
-    // if fit_params::FIT_ALGORITHM_TYPE == FitAlgorithmType::PatternSearch {
-    //     println!("FIT_RESIDUE_GOAL     : {:.2e}", fit_params::FIT_RESIDUE_GOAL);
-    // }
-    println!("FIT_RESIDUE_EVALS_MAX : {}", fit_params::FIT_RESIDUE_EVALS_MAX.to_string_underscore_separated());
+    println!("FIT_ALGORITHM: {:#?}", config.fit_algorithm);
+    // TODO: fit_algorithm.max_evals.to_string_underscore_separated
 
     let file_instrument = Path::new(filepathstr_instrument);
     let file_spectrum   = Path::new(filepathstr_measured);
@@ -185,7 +81,7 @@ fn main() {
     ));
     let filepathstr_output_convolved: &str = filepath_output_convolved.to_str().unwrap();
 
-    let deconvolution = deconvolution_params::DECONVOLUTION;
+    let deconvolution = config.deconvolution_function.clone();
 
     let deconvolution_data: DeconvolutionData = DeconvolutionData {
         instrument,
@@ -199,11 +95,12 @@ fn main() {
     println!("fit_residue @ initial_values: {}", fit_residue_with_initial_values);
     println!();
 
-    let deconvolve_results = deconvolution_data.deconvolve(fit_params::FIT_ALGORITHM_TYPE);
+    let deconvolve_results = deconvolution_data.deconvolve(&config.fit_algorithm);
     match deconvolve_results {
         Err(err) => println!("ERROR: {}", err),
         Ok(ref deconvolution_results_unwrapped) => {
             output_results(
+                &config,
                 &deconvolution_data,
                 deconvolution_results_unwrapped,
                 filepathstr_output,
@@ -211,7 +108,7 @@ fn main() {
             );
         }
     }
-    if !deconvolution_params::TRY_RANDOMIZED_INITIAL_VALUES { return }
+    if !config.deconvolution_params.try_randomized_initial_values { return }
 
     println!();
     println!("------- NOW TRYING RANDOM INITIAL VALUES -------");
@@ -223,28 +120,29 @@ fn main() {
     loop {
         initial_values_tried += 1;
         let mut deconvolution_data = deconvolution_data.clone();
-        fn randomize_array(array: &mut [float], rng: &mut ThreadRng) {
+        fn randomize_array(array: &mut [float], rng: &mut ThreadRng, config: &Config) {
             for i in 0..array.len() {
-                let is_change_sign: bool = rng.gen_bool(deconvolution_params::CHANGE_SING_PROBABILITY);
+                let is_change_sign: bool = rng.gen_bool(config.deconvolution_params.change_sing_probability);
                 let random_scale: float = rng.gen_range(
-                    1./deconvolution_params::INITIAL_VALUES_RANDOM_SCALE
-                    ..=deconvolution_params::INITIAL_VALUES_RANDOM_SCALE
+                    1./config.deconvolution_params.initial_values_random_scale
+                    ..=
+                    config.deconvolution_params.initial_values_random_scale
                 );
                 array[i] *= if is_change_sign { -1. } else { 1. } * random_scale;
             }
         }
         match deconvolution_data.deconvolution {
             Deconvolution::PerPoint { .. } => panic!("there is no need to try different initial params"),
-            Deconvolution::Exponents { ref mut initial_values, .. } => randomize_array(&mut initial_values[..], &mut rng),
-            Deconvolution::SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
-            Deconvolution::Two_SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
-            Deconvolution::SatExp_DecExpPlusConst { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
-            Deconvolution::SatExp_TwoDecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
-            Deconvolution::SatExp_TwoDecExpPlusConst { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
-            Deconvolution::SatExp_TwoDecExp_SeparateConsts { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng),
+            Deconvolution::Exponents { ref mut initial_values, .. } => randomize_array(&mut initial_values[..], &mut rng, &config),
+            Deconvolution::SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
+            Deconvolution::Two_SatExp_DecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
+            Deconvolution::SatExp_DecExpPlusConst { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
+            Deconvolution::SatExp_TwoDecExp { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
+            Deconvolution::SatExp_TwoDecExpPlusConst { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
+            Deconvolution::SatExp_TwoDecExp_SeparateConsts { ref mut initial_values, .. } => randomize_array(initial_values, &mut rng, &config),
             Deconvolution::Fourier {} => unimplemented!(),
         }
-        let deconvolution_results = deconvolution_data.deconvolve(fit_params::FIT_ALGORITHM_TYPE);
+        let deconvolution_results = deconvolution_data.deconvolve(&config.fit_algorithm);
         match deconvolution_results {
             Ok(deconvolution_results_unwrapped) if deconvolution_results_unwrapped.fit_residue < best_fit_residue => {
                 best_fit_residue = deconvolution_results_unwrapped.fit_residue;
@@ -253,6 +151,7 @@ fn main() {
                 // let Deconvolution::Exponents { initial_values, .. } = deconvolution_data.deconvolution else { unreachable!() };
                 // dbg!(initial_values);
                 output_results(
+                    &config,
                     &deconvolution_data,
                     &deconvolution_results_unwrapped,
                     filepathstr_output,
@@ -261,12 +160,14 @@ fn main() {
                 println!("{}", "-".repeat(42));
             }
             _ => {
-                println!(
-                    "fit_residue: {}",
-                    deconvolution_results.as_ref()
-                        .map(|dr| format!("{:.4}", dr.fit_residue))
-                        .unwrap_or_else(|err| format!("Error: {err}"))
-                );
+                if !config.deconvolution_params.print_only_better_deconvolution {
+                    println!(
+                        "fit_residue: {}",
+                        deconvolution_results.as_ref()
+                            .map(|dr| format!("{:.4}", dr.fit_residue))
+                            .unwrap_or_else(|err| format!("Error: {err}"))
+                    );
+                }
             },
         }
     }
@@ -274,6 +175,7 @@ fn main() {
 
 
 fn output_results(
+    config: &Config,
     deconvolution_data: &DeconvolutionData,
     deconvolution_results: &FitResult,
     filepathstr_output: &str,
@@ -284,9 +186,13 @@ fn output_results(
 
     let params = &deconvolution_results.params;
 
-    let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(&params);
+    let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(
+        &params,
+        config.output_params.significant_digits,
+    );
     if let Ok(ref desmos_function_str) = desmos_function_str {
         println!("{}", desmos_function_str);
+        println!("\"fit residue: {}", deconvolution_results.fit_residue);
     }
 
     // let mut file_output = File::create(filepath_output).unwrap();
@@ -304,14 +210,16 @@ fn output_results(
     // - extract function name into separate method?
     // - extract common logic
     match &deconvolution_data.deconvolution {
-        Deconvolution::PerPoint { .. } => {
+        self_ @ Deconvolution::PerPoint { .. } => {
             let sd_deconvolved = Spectrum {
                 points: deconvolution_results.params.clone(),
                 step: deconvolution_data.get_step(),
                 x_start: deconvolution_data.measured.x_start,
             };
+            let mut file_output = File::create(filepathstr_output).unwrap();
+            writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
+            drop(file_output);
             sd_deconvolved.write_to_file(filepathstr_output);
-            todo!("also print `fit_residue` and `fit_residue_evals`");
         }
         self_ @ Deconvolution::Exponents { .. } => {
             let mut file_output = File::create(filepathstr_output).unwrap();
@@ -329,8 +237,9 @@ fn output_results(
         self_ @ Deconvolution::SatExp_DecExp { .. } => {
             let mut file_output = File::create(filepathstr_output).unwrap();
             writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-            let (amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
-            writeln!(file_output, "amplitude={amplitude}").unwrap();
+            // let (amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
+            let (shift, tau_a, tau_b) = (params[0], params[1], params[2]);
+            // writeln!(file_output, "amplitude={amplitude}").unwrap();
             writeln!(file_output, "shift={shift}").unwrap();
             writeln!(file_output, "tau_a={tau_a}").unwrap();
             writeln!(file_output, "tau_b={tau_b}").unwrap();
