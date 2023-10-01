@@ -3,7 +3,6 @@
 use std::cmp::Ordering;
 
 use crate::{
-    config::Config,
     convolution::convolve_by_points,
     deconvolution::Deconvolution,
     fit_algorithm::{FitAlgorithm, FitResultOrError},
@@ -91,7 +90,6 @@ impl DeconvolutionData {
     /// [`step`]: SpectrumData::step
     /// [`instrument`]: DeconvolutionData::instrument
     /// [`measured`]: DeconvolutionData::measured
-    #[allow(dead_code)]
     pub fn aligned_steps_to_bigger(self) -> Self {
         self.aligned_steps_to("bigger")
     }

@@ -63,10 +63,11 @@ fn main() {
 
     let file_instrument = Path::new(filepathstr_instrument);
     let file_spectrum   = Path::new(filepathstr_measured);
-    assert_eq!(
-        file_instrument.parent().unwrap().canonicalize().unwrap().to_str().unwrap(),
-        file_spectrum  .parent().unwrap().canonicalize().unwrap().to_str().unwrap()
-    );
+    // TODO:
+    // assert_eq!(
+    //     file_instrument.parent().unwrap().canonicalize().unwrap().to_str().unwrap(),
+    //     file_spectrum  .parent().unwrap().canonicalize().unwrap().to_str().unwrap()
+    // );
     const FILENAME_PREFIX: &str = "result";
     let filepath_output = file_spectrum.with_file_name(format!(
         "{FILENAME_PREFIX}_{}_{}.dat",
@@ -88,7 +89,7 @@ fn main() {
         measured,
         deconvolution,
     }.aligned_steps_to_smaller();
-
+    // TODO: option in config to align steps to smaller or bigger
 
     println!();
     let fit_residue_with_initial_values = deconvolution_data.calc_residue_function(&deconvolution_data.get_initial_params());
