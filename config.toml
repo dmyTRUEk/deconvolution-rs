@@ -57,7 +57,7 @@ initial_values = [ 4.0, 5.0, 120.0, 100.0, 6.0, 7.0 ]
 
 
 [deconvolution_params]
-try_randomized_initial_values = false
+try_randomized_initial_values = 0
 initial_values_random_scale = 10.0
 change_sing_probability = 0.05
 print_only_better_deconvolution = true
