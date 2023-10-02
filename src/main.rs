@@ -38,10 +38,10 @@ fn main() {
     let config = Config::load_from_default_file();
 
     let args: Vec<_> = env::args().collect();
-    let (filepathstr_instrument, filepathstr_measured): (&str, &str) = match &args[..] {
-        [_, filepathstr_instrument, filepathstr_measured] => (filepathstr_instrument, filepathstr_measured),
-        [_, _] => panic!("Expected two filename, provided only one."),
-        [_] => panic!("Filenames not provided."),
+    let filepathstr_instrument: &str = match &args[..] {
+        [_, filepathstr_instrument, _] => filepathstr_instrument,
+        [_, _] => panic!("Expected at least two filenames (instrumental & measured), provided only one."),
+        [_] => panic!("Expected at least two filenames (instrumental & measured), provided zero."),
         [] => unreachable!("Unexpected CLI args number."),
         _ => panic!("Too many CLI args.") // TODO(feat): support multiple files to deconvolve.
     };
@@ -50,6 +50,18 @@ fn main() {
     let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument);
     println!(" done");
 
+    for filepathstr_measured in args[2..].iter() {
+        process_measured_file(&config, instrument.clone(), filepathstr_instrument, filepathstr_measured);
+    }
+}
+
+
+fn process_measured_file(
+    config: &Config,
+    instrument: Spectrum,
+    filepathstr_instrument: &str,
+    filepathstr_measured: &str,
+) {
     print!("Loading spectrum to deconvolve from `{}`...", filepathstr_measured); flush();
     let measured = Spectrum::load_from_file(filepathstr_measured);
     println!(" done");
