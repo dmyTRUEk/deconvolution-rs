@@ -1,11 +1,16 @@
 //! Spectrum.
 
 use std::{
+    cmp::Ordering,
     fs::File,
     io::{BufRead, BufReader, Write},
 };
 
-use crate::float_type::float;
+use crate::{
+    extensions::IndexOfMax,
+    float_type::float,
+    unmut,
+};
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -93,6 +98,64 @@ impl Spectrum {
         }
     }
 
+    pub fn load_from_file_as_instrumental(filename: &str) -> Self {
+        let mut self_ = Self::load_from_file(filename);
+        self_.trim_zeros();
+        self_.pad_zeros();
+        if self_.points.len()%2 != 1 { unreachable!() }
+        if self_.points.len()/2 != self_.points.index_of_max().unwrap() { unreachable!() }
+        self_
+    }
+    fn trim_zeros(&mut self) {
+        let index_of_first_non_zero: usize = self.points
+            .iter()
+            .position(|&v| v != 0.)
+            .expect("instrumental function must have at least one non zero");
+        let index_of_last_non_zero: usize = self.points
+            .iter()
+            .enumerate() // TODO(optimization): check if this is optimal, and if no, do math "by hands".
+            .rev()
+            .find(|(_i, &v)| v != 0.)
+            .unwrap()
+            .0;
+        self.points = self.points[index_of_first_non_zero..index_of_last_non_zero].to_vec();
+        let number_of_removed_points_from_start = index_of_first_non_zero;
+        self.x_start += self.step * (number_of_removed_points_from_start as float);
+    }
+    fn pad_zeros(&mut self) {
+        assert!(self.points.len() > 0);
+        let mut indices_of_maxes: Vec<usize> = vec![0];
+        for (i, v) in self.points.iter().enumerate().skip(1) {
+            match v.partial_cmp(&self.points[indices_of_maxes[0]]).unwrap() {
+                Ordering::Less => {
+                    indices_of_maxes.clear();
+                    indices_of_maxes.push(i);
+                }
+                Ordering::Equal => {
+                    indices_of_maxes.push(i);
+                }
+                Ordering::Greater => {}
+            }
+        }
+        unmut!(indices_of_maxes);
+        let indices_of_maxes: Vec<float> = indices_of_maxes
+            .into_iter()
+            .map(|v| v as float)
+            .collect();
+        let avg_index_of_max: float = indices_of_maxes.iter().sum::<float>() / (indices_of_maxes.len() as float);
+        let avg_index_of_max: usize = avg_index_of_max as usize;
+        let avg_index_of_max: isize = avg_index_of_max as isize;
+        let shift_of_max: isize = avg_index_of_max - (self.points.len() / 2) as isize;
+        let shift_of_max_abs: usize = shift_of_max as usize;
+        let points = self.points.clone();
+        let zeros = vec![0.; shift_of_max_abs];
+        self.points = match shift_of_max.cmp(&0) {
+            Ordering::Less => [zeros, points].concat(),
+            Ordering::Equal => points,
+            Ordering::Greater => [points, zeros].concat(),
+        };
+    }
+
     pub fn load_from_file(filename: &str) -> Self {
         Self::try_load_from_file(filename).unwrap()
     }
@@ -102,7 +165,7 @@ impl Spectrum {
         let mut x_start: Option<float> = None;
         let mut x_prev: Option<float> = None;
         let mut step: Option<float> = None;
-        let mut ys = Vec::<float>::with_capacity(20);
+        let mut ys: Vec<float> = vec![];
         for line in lines.into_iter() {
             let Ok(line) = line else { return Err("Unable to unwrap line") };
             let line = line.trim();

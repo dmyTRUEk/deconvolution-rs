@@ -19,14 +19,14 @@ use crate::{
 #[allow(dead_code, non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Deconvolution {
-    /// [y0, y1, y2, ...]
+    /// [y0, y1, y2, …]
     PerPoint {
         diff_function_type: DiffFunction,
         antispikes: Option<Antispikes>,
         initial_value: float, // [y0, y1, y2, ...]
     },
 
-    /// a1*exp(-(x-s1)/t1) + ...
+    /// a1*exp(-(x-s1)/t1) + …
     Exponents {
         diff_function_type: DiffFunction,
         exponents_amount: usize,

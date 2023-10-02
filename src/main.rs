@@ -20,6 +20,7 @@ mod exponent_function;
 mod extensions;
 mod fit_algorithm;
 mod float_type;
+mod macros;
 mod spectrum;
 mod utils_io;
 
@@ -46,10 +47,8 @@ fn main() {
     };
 
     print!("Loading instrumental spectrum  from `{}`...", filepathstr_instrument); flush();
-    let instrument = Spectrum::load_from_file(filepathstr_instrument);
+    let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument);
     println!(" done");
-    assert_eq!(1, instrument.points.len() % 2, "must be odd number of points");
-    assert_eq!(instrument.points.len()/2, instrument.points.index_of_max().unwrap(), "max must be at center");
 
     print!("Loading spectrum to deconvolve from `{}`...", filepathstr_measured); flush();
     let measured = Spectrum::load_from_file(filepathstr_measured);
@@ -58,23 +57,27 @@ fn main() {
     // TODO: warning if points in instr more than in spectrum.
     // assert!(measured.points.len() > instrument.points.len());
 
-    println!("FIT_ALGORITHM: {:#?}", config.fit_algorithm);
+    println!("Fit Algorithm = {:#?}", config.fit_algorithm);
     // TODO: fit_algorithm.max_evals.to_string_underscore_separated
 
     let file_instrument = Path::new(filepathstr_instrument);
     let file_spectrum   = Path::new(filepathstr_measured);
+
     // TODO:
     // assert_eq!(
     //     file_instrument.parent().unwrap().canonicalize().unwrap().to_str().unwrap(),
     //     file_spectrum  .parent().unwrap().canonicalize().unwrap().to_str().unwrap()
     // );
+
     const FILENAME_PREFIX: &str = "result";
+
     let filepath_output = file_spectrum.with_file_name(format!(
         "{FILENAME_PREFIX}_{}_{}.dat",
         file_instrument.file_stem().unwrap().to_str().unwrap(),
         file_spectrum.file_stem().unwrap().to_str().unwrap()
     ));
     let filepathstr_output: &str = filepath_output.to_str().unwrap();
+
     let filepath_output_convolved = file_spectrum.with_file_name(format!(
         "{FILENAME_PREFIX}_{}_{}_convolved.dat",
         file_instrument.file_stem().unwrap().to_str().unwrap(),
@@ -93,7 +96,7 @@ fn main() {
 
     println!();
     let fit_residue_with_initial_values = deconvolution_data.calc_residue_function(&deconvolution_data.get_initial_params());
-    println!("fit_residue @ initial_values: {}", fit_residue_with_initial_values);
+    println!("fit_residue @ initial_values: {:.4}", fit_residue_with_initial_values);
     println!();
 
     let deconvolve_results = deconvolution_data.deconvolve(&config.fit_algorithm);
