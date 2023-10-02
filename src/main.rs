@@ -38,13 +38,13 @@ fn main() {
     let config = Config::load_from_default_file();
 
     let args: Vec<_> = env::args().collect();
-    let filepathstr_instrument: &str = match &args[..] {
-        [_, filepathstr_instrument, _] => filepathstr_instrument,
+    match &args[..] {
         [_, _] => panic!("Expected at least two filenames (instrumental & measured), provided only one."),
         [_] => panic!("Expected at least two filenames (instrumental & measured), provided zero."),
         [] => unreachable!("Unexpected CLI args number."),
-        _ => panic!("Too many CLI args.") // TODO(feat): support multiple files to deconvolve.
-    };
+        _ => {}
+    }
+    let filepathstr_instrument: &str = &args[1];
 
     print!("Loading instrumental spectrum  from `{}`...", filepathstr_instrument); flush();
     let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument);
