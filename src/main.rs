@@ -71,19 +71,27 @@ fn main() {
 
     const FILENAME_PREFIX: &str = "result";
 
-    let filepath_output = file_spectrum.with_file_name(format!(
-        "{FILENAME_PREFIX}_{}_{}.dat",
-        file_instrument.file_stem().unwrap().to_str().unwrap(),
-        file_spectrum.file_stem().unwrap().to_str().unwrap()
-    ));
-    let filepathstr_output: &str = filepath_output.to_str().unwrap();
+    let build_filepathstr_output = |randomized_initial_values_i: u64| -> String {
+        let filepath_output = file_spectrum.with_file_name(format!(
+            "{FILENAME_PREFIX}_{}_{}{}.dat",
+            file_instrument.file_stem().unwrap().to_str().unwrap(),
+            file_spectrum.file_stem().unwrap().to_str().unwrap(),
+            if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
+        ));
+        let filepathstr_output: String = filepath_output.to_str().unwrap().to_string();
+        filepathstr_output
+    };
 
-    let filepath_output_convolved = file_spectrum.with_file_name(format!(
-        "{FILENAME_PREFIX}_{}_{}_convolved.dat",
-        file_instrument.file_stem().unwrap().to_str().unwrap(),
-        file_spectrum.file_stem().unwrap().to_str().unwrap()
-    ));
-    let filepathstr_output_convolved: &str = filepath_output_convolved.to_str().unwrap();
+    let build_filepathstr_output_convolved = |randomized_initial_values_i: u64| -> String {
+        let filepath_output_convolved = file_spectrum.with_file_name(format!(
+            "{FILENAME_PREFIX}_{}_{}{}_convolved.dat",
+            file_instrument.file_stem().unwrap().to_str().unwrap(),
+            file_spectrum.file_stem().unwrap().to_str().unwrap(),
+            if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
+        ));
+        let filepathstr_output_convolved: String = filepath_output_convolved.to_str().unwrap().to_string();
+        filepathstr_output_convolved
+    };
 
     let deconvolution = config.deconvolution_function.clone();
 
@@ -107,12 +115,12 @@ fn main() {
                 &config,
                 &deconvolution_data,
                 deconvolution_results_unwrapped,
-                filepathstr_output,
-                filepathstr_output_convolved,
+                &build_filepathstr_output(0),
+                &build_filepathstr_output_convolved(0),
             );
         }
     }
-    if !config.deconvolution_params.try_randomized_initial_values { return }
+    if config.deconvolution_params.try_randomized_initial_values == 0 { return }
 
     println!();
     println!("------- NOW TRYING RANDOM INITIAL VALUES -------");
@@ -120,9 +128,7 @@ fn main() {
 
     let mut rng = thread_rng();
     let mut best_fit_residue: float = if deconvolve_results.is_ok() { deconvolve_results.unwrap().fit_residue } else { float::MAX };
-    let mut initial_values_tried: u64 = 0;
-    loop {
-        initial_values_tried += 1;
+    for randomized_initial_values_i in 1..=config.deconvolution_params.try_randomized_initial_values {
         let mut deconvolution_data = deconvolution_data.clone();
         fn randomize_array(array: &mut [float], rng: &mut ThreadRng, config: &Config) {
             for i in 0..array.len() {
@@ -151,15 +157,15 @@ fn main() {
             Ok(deconvolution_results_unwrapped) if deconvolution_results_unwrapped.fit_residue < best_fit_residue => {
                 best_fit_residue = deconvolution_results_unwrapped.fit_residue;
                 println!("{}", "-".repeat(42));
-                println!("initial_values_tried: {}", initial_values_tried);
+                println!("initial values tried: {}", randomized_initial_values_i);
                 // let Deconvolution::Exponents { initial_values, .. } = deconvolution_data.deconvolution else { unreachable!() };
                 // dbg!(initial_values);
                 output_results(
                     &config,
                     &deconvolution_data,
                     &deconvolution_results_unwrapped,
-                    filepathstr_output,
-                    filepathstr_output_convolved,
+                    &build_filepathstr_output(randomized_initial_values_i),
+                    &build_filepathstr_output_convolved(randomized_initial_values_i),
                 );
                 println!("{}", "-".repeat(42));
             }

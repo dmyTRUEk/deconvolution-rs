@@ -80,7 +80,7 @@ pub type ConfigDeconvolutionFunc = Deconvolution;
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigDeconvolutionParams {
-    pub try_randomized_initial_values: bool,
+    pub try_randomized_initial_values: u64,
     pub initial_values_random_scale: float,
     pub change_sing_probability: float,
     pub print_only_better_deconvolution: bool,
@@ -90,8 +90,10 @@ impl Load for ConfigDeconvolutionParams {
         let try_randomized_initial_values = toml_value
             .get("try_randomized_initial_values")
             .expect("deconvolution_params: `try_randomized_initial_values` not found")
-            .as_bool()
-            .expect("deconvolution_params -> try_randomized_initial_values: can't parse as bool");
+            .as_integer()
+            .expect("deconvolution_params -> try_randomized_initial_values: can't parse as integer");
+        assert!(try_randomized_initial_values >= 0);
+        let try_randomized_initial_values: u64 = try_randomized_initial_values as u64;
         let initial_values_random_scale = toml_value
             .get("initial_values_random_scale")
             .expect("deconvolution_params: `initial_values_random_scale` not found")
@@ -152,7 +154,7 @@ fn load_from_text() {
             initial_values: [0.12, 296., 3.96, 6.7, 1.16, 310., 23.2, 1.79],
         },
         deconvolution_params: ConfigDeconvolutionParams {
-            try_randomized_initial_values: true,
+            try_randomized_initial_values: 42,
             initial_values_random_scale: 10.,
             change_sing_probability: 0.05,
             print_only_better_deconvolution: true,
@@ -176,7 +178,7 @@ diff_function_type = "DySqr"
 initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
 
 [deconvolution_params]
-try_randomized_initial_values = true
+try_randomized_initial_values = 42
 initial_values_random_scale = 10.0
 change_sing_probability = 0.05
 print_only_better_deconvolution = true
