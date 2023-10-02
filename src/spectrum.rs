@@ -102,8 +102,8 @@ impl Spectrum {
         let mut self_ = Self::load_from_file(filename);
         self_.trim_zeros();
         self_.pad_zeros();
-        if self_.points.len()%2 != 1 { unreachable!() }
-        if self_.points.len()/2 != self_.points.index_of_max().unwrap() { unreachable!() }
+        if self_.points.len() % 2 != 1 { unreachable!() }
+        if self_.points.len() / 2 != Self::avg_index_of_max(&self_.points) as usize { unreachable!() }
         self_
     }
     fn trim_zeros(&mut self) {
@@ -118,23 +118,23 @@ impl Spectrum {
             .find(|(_i, &v)| v != 0.)
             .unwrap()
             .0;
-        self.points = self.points[index_of_first_non_zero..index_of_last_non_zero].to_vec();
+        self.points = self.points[index_of_first_non_zero..=index_of_last_non_zero].to_vec();
         let number_of_removed_points_from_start = index_of_first_non_zero;
         self.x_start += self.step * (number_of_removed_points_from_start as float);
     }
-    fn pad_zeros(&mut self) {
-        assert!(self.points.len() > 0);
+    fn avg_index_of_max(points: &Vec<float>) -> float {
+        assert!(points.len() > 0);
         let mut indices_of_maxes: Vec<usize> = vec![0];
-        for (i, v) in self.points.iter().enumerate().skip(1) {
-            match v.partial_cmp(&self.points[indices_of_maxes[0]]).unwrap() {
-                Ordering::Less => {
+        for (i, v) in points.iter().enumerate().skip(1) {
+            match v.partial_cmp(&points[indices_of_maxes[0]]).unwrap() {
+                Ordering::Greater => {
                     indices_of_maxes.clear();
                     indices_of_maxes.push(i);
                 }
                 Ordering::Equal => {
                     indices_of_maxes.push(i);
                 }
-                Ordering::Greater => {}
+                Ordering::Less => {}
             }
         }
         unmut!(indices_of_maxes);
@@ -143,12 +143,22 @@ impl Spectrum {
             .map(|v| v as float)
             .collect();
         let avg_index_of_max: float = indices_of_maxes.iter().sum::<float>() / (indices_of_maxes.len() as float);
+        avg_index_of_max
+    }
+    fn pad_zeros(&mut self) {
+        let avg_index_of_max = Self::avg_index_of_max(&self.points);
         let avg_index_of_max: usize = avg_index_of_max as usize;
         let avg_index_of_max: isize = avg_index_of_max as isize;
         let shift_of_max: isize = avg_index_of_max - (self.points.len() / 2) as isize;
-        let shift_of_max_abs: usize = shift_of_max as usize;
+        if shift_of_max == 0 { return }
+        let shift_of_max_abs: usize = shift_of_max.abs() as usize;
         let points = self.points.clone();
-        let zeros = vec![0.; shift_of_max_abs];
+        let zeros_len = if points.len() % 2 == 0 {
+            2*shift_of_max_abs+1
+        } else {
+            2*shift_of_max_abs
+        };
+        let zeros = vec![0.; zeros_len];
         self.points = match shift_of_max.cmp(&0) {
             Ordering::Less => [zeros, points].concat(),
             Ordering::Equal => points,

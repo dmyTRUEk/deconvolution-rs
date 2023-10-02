@@ -27,7 +27,7 @@ mod utils_io;
 use config::Config;
 use deconvolution::Deconvolution;
 use deconvolution_data::DeconvolutionData;
-use extensions::{IndexOfMax, ToStringUnderscoreSeparated};
+use extensions::ToStringUnderscoreSeparated;
 use fit_algorithm::FitResult;
 use float_type::float;
 use spectrum::Spectrum;
