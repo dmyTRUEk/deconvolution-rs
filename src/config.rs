@@ -9,7 +9,7 @@ use toml::{
 
 use crate::{
     deconvolution::Deconvolution,
-    fit_algorithm::FitAlgorithm,
+    fit_algorithms::fit_algorithm::FitAlgorithm,
     float_type::float,
 };
 
@@ -146,7 +146,7 @@ type ConfigFitAlgorithmParams = FitAlgorithm;
 fn load_from_text() {
     use crate::{
         diff_function::DiffFunction,
-        fit_algorithm::PatternSearchParams,
+        fit_algorithms::pattern_search::PatternSearch,
     };
     let config_expected = Config {
         deconvolution_function: ConfigDeconvolutionFunc::Two_SatExp_DecExp {
@@ -162,7 +162,7 @@ fn load_from_text() {
         output_params: ConfigOutputParams {
             significant_digits: 4
         },
-        fit_algorithm: ConfigFitAlgorithmParams::PatternSearch(PatternSearchParams {
+        fit_algorithm: ConfigFitAlgorithmParams::PatternSearch(PatternSearch {
             fit_algorithm_min_step: 1e-4,
             fit_residue_evals_max: 1_000_000,
             fit_residue_max_value: 1e6,

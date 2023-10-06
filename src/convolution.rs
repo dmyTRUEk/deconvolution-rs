@@ -596,7 +596,7 @@ mod deconvolve {
             Spectrum,
             deconvolution_data::DeconvolutionResultOrError,
             diff_function::DiffFunction,
-            fit_algorithm::{FitAlgorithm, PatternSearchParams},
+            fit_algorithms::{fit_algorithm::FitAlgorithm, pattern_search::PatternSearch},
             float,
         };
         const DECONVOLUTION: Deconvolution = Deconvolution::PerPoint {
@@ -604,7 +604,7 @@ mod deconvolve {
             antispikes: None,
             initial_value: 0.,
         };
-        const FIT_ALGORITHM: FitAlgorithm = FitAlgorithm::PatternSearch(PatternSearchParams {
+        const FIT_ALGORITHM: FitAlgorithm = FitAlgorithm::PatternSearch(PatternSearch {
             fit_algorithm_min_step: 1e-4,
             fit_residue_evals_max: 1_000_000,
             fit_residue_max_value: 1e6,

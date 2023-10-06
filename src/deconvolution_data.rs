@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use crate::{
     convolution::convolve_by_points,
     deconvolution::Deconvolution,
-    fit_algorithm::{FitAlgorithm, FitResultOrError},
+    fit_algorithms::fit_algorithm::{FitAlgorithm, FitResultOrError},
     float_type::float,
     spectrum::Spectrum,
 };
