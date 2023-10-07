@@ -1,6 +1,6 @@
 [package]
 name = "deconvolution-rs"
-version = "6.4.0"
+version = "6.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,5 +16,5 @@ strip = "debuginfo"
 
 [dependencies]
 rand = "0.8.5"
-rayon = "1.7.0"
-toml = "0.8.1"
+rayon = "1.8.0"
+toml = "0.8.2"
