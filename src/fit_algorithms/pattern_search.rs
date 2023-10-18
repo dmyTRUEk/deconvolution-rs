@@ -69,11 +69,11 @@ impl PatternSearch {
                         // TODO(optimization)?: remove `.is_finite()` check, bc it already will be "done" when calculating residue function.
                         let mut params_new = params.clone();
                         params_new[i/2] = param_new;
-                        if !param_new.is_finite() || !deconvolution_data.is_params_ok(&params_new) {
-                            (0, float::NAN)
-                        } else {
+                        if param_new.is_finite() && deconvolution_data.is_params_ok(&params_new) {
                             let res = deconvolution_data.calc_residue_function(&params_new);
                             (1, if res.is_finite() { res } else { float::NAN })
+                        } else {
+                            (0, float::NAN)
                         }
                         // returns tuple of `residue_function_evals` and `residue_result`.
                     })
@@ -128,7 +128,7 @@ impl PatternSearch {
 
 
 impl Load for PatternSearch {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         let fit_algorithm_min_step = toml_value
             .get("fit_algorithm_min_step")
             .expect("fit_params -> pattern_search: `fit_algorithm_min_step` not found")

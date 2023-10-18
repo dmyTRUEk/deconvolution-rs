@@ -27,7 +27,7 @@ mod utils_io;
 use config::Config;
 use deconvolution::Deconvolution;
 use deconvolution_data::DeconvolutionData;
-use extensions::ToStringUnderscoreSeparated;
+use extensions::ToStringUnderscoreSeparated; // TODO: use
 use fit_algorithms::fit_algorithm::FitResult;
 use float_type::float;
 use spectrum::Spectrum;
@@ -75,7 +75,7 @@ fn process_measured_file(
     let file_instrument = Path::new(filepathstr_instrument);
     let file_spectrum   = Path::new(filepathstr_measured);
 
-    // TODO:
+    // TODO: fix: dont work on win7?
     // assert_eq!(
     //     file_instrument.parent().unwrap().canonicalize().unwrap().to_str().unwrap(),
     //     file_spectrum  .parent().unwrap().canonicalize().unwrap().to_str().unwrap()
@@ -111,8 +111,7 @@ fn process_measured_file(
         instrument,
         measured,
         deconvolution,
-    }.aligned_steps_to_smaller();
-    // TODO: option in config to align steps to smaller or bigger
+    }.aligned_steps_to(config.input_params.align_step_to);
 
     println!();
     let fit_residue_with_initial_values = deconvolution_data.calc_residue_function(&deconvolution_data.get_initial_params());

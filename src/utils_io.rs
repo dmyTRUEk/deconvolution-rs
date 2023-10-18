@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 
+
 pub fn press_enter_to_continue() {
     print("PRESS ENTER TO CONTINUE.");
     wait_for_enter();

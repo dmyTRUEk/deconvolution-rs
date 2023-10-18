@@ -2,6 +2,8 @@
 
 use std::str::FromStr;
 
+use toml::Value as TomlValue;
+
 use crate::{
     antispikes::Antispikes,
     config::Load,
@@ -74,7 +76,7 @@ impl FromStr for DiffFunction {
 
 
 impl Load for DiffFunction {
-    fn load_from_toml_value(toml_value: toml::Value) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         DiffFunction::from_str(
             toml_value
                 .as_str()

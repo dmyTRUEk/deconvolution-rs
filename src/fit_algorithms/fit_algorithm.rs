@@ -1,5 +1,7 @@
 //! Fit Algorithm enum.
 
+use std::cmp::Ordering;
+
 use toml::Value as TomlValue;
 
 use crate::{
@@ -9,7 +11,6 @@ use crate::{
 };
 
 use super::{
-    downhill_simplex::DownhillSimplex,
     pattern_search::PatternSearch,
     pattern_search_adaptive_step::PatternSearchAdaptiveStep,
     pattern_search_scaled_step::PatternSearchScaledStep,
@@ -33,7 +34,6 @@ pub enum FitAlgorithm {
     PatternSearch(PatternSearch),
     PatternSearchScaledStep(PatternSearchScaledStep),
     PatternSearchAdaptiveStep(PatternSearchAdaptiveStep),
-    DownhillSimplex(DownhillSimplex),
 }
 
 impl FitAlgorithm {
@@ -48,55 +48,45 @@ impl FitAlgorithm {
             FitAlgorithm::PatternSearchAdaptiveStep(psas) => {
                 psas.fit(deconvolution_data)
             }
-            FitAlgorithm::DownhillSimplex(ds) => {
-                ds.fit(deconvolution_data)
-            }
         }
     }
 }
 
 
 
-
 impl Load for FitAlgorithm {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
-        const FIT_ALGORITHMS_NAMES: [&str; 4] = [
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+        const FIT_ALGORITHMS_NAMES: [&'static str; 3] = [
             "pattern_search",
             "pattern_search_scaled_step",
             "pattern_search_adaptive_step",
-            "downhill_simplex",
         ];
-        let fit_algorithms: Vec<Option<&TomlValue>> = FIT_ALGORITHMS_NAMES
+        let fit_algorithms = FIT_ALGORITHMS_NAMES
+            .map(|fa_name| toml_value.get(fa_name));
+        let fit_algorithms_number = fit_algorithms
             .iter()
-            .map(|fa_name| toml_value.get(fa_name))
-            .collect();
-        match fit_algorithms.iter().filter(|fa| fa.is_some()).count() {
-            0 => panic!("no known `fit_algorithm.<name>` found"),
-            1 => {}
-            _ => panic!("too many `fit_algorithm.<name>` found")
+            .filter(|fa| fa.is_some())
+            .count();
+        match fit_algorithms_number.cmp(&1) {
+            Ordering::Less    => panic!("no known `fit_algorithm.<name>` found"),
+            Ordering::Greater => panic!("too many `fit_algorithm.<name>` found"),
+            Ordering::Equal => {}
         }
-        let fit_algorithm_i = fit_algorithms.iter().position(|fa| fa.is_some()).unwrap();
+        let fit_algorithm_index = fit_algorithms
+            .iter()
+            .position(|fa| fa.is_some())
+            .unwrap();
+        let toml_value = fit_algorithms[fit_algorithm_index].unwrap();
         // TODO(refactor)
-        match fit_algorithm_i {
+        match fit_algorithm_index {
             0 => Self::PatternSearch(
-                PatternSearch::load_from_toml_value(
-                    fit_algorithms[0].unwrap().clone()
-                )
+                PatternSearch::load_from_toml_value(toml_value)
             ),
             1 => Self::PatternSearchScaledStep(
-                PatternSearchScaledStep::load_from_toml_value(
-                    fit_algorithms[1].unwrap().clone()
-                )
+                PatternSearchScaledStep::load_from_toml_value(toml_value)
             ),
             2 => Self::PatternSearchAdaptiveStep(
-                PatternSearchAdaptiveStep::load_from_toml_value(
-                    fit_algorithms[2].unwrap().clone()
-                )
-            ),
-            3 => Self::DownhillSimplex(
-                DownhillSimplex::load_from_toml_value(
-                    fit_algorithms[3].unwrap().clone()
-                )
+                PatternSearchAdaptiveStep::load_from_toml_value(toml_value)
             ),
             _ => unreachable!()
         }

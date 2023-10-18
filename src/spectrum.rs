@@ -7,7 +7,6 @@ use std::{
 };
 
 use crate::{
-    extensions::IndexOfMax,
     float_type::float,
     unmut,
 };
@@ -21,12 +20,6 @@ pub struct Spectrum {
 }
 
 impl Spectrum {
-    #[allow(dead_code)]
-    #[deprecated = "explicitly use field names to not mix up them"]
-    pub fn new(points: Vec<float>, step: float, x_start: float) -> Self {
-        Self { points, step, x_start }
-    }
-
     pub fn get_x_range(&self) -> float {
         // self.get_x_end() - self.x_start
         self.step * (self.points.len().saturating_sub(1) as float)

@@ -422,7 +422,15 @@ mod convolve {
 
 #[cfg(test)]
 mod deconvolution_data {
-    use crate::{Deconvolution, DeconvolutionData, diff_function::DiffFunction, Spectrum};
+    use crate::{
+        deconvolution::Deconvolution,
+        deconvolution_data::{
+            AlignStepsTo,
+            DeconvolutionData,
+        },
+        spectrum::Spectrum,
+        diff_function::DiffFunction,
+    };
     mod align_steps_to_smaller {
         use super::*;
         #[test]
@@ -461,7 +469,7 @@ mod deconvolution_data {
                         antispikes: None,
                         initial_value: 0.,
                     },
-                }.aligned_steps_to_smaller()
+                }.aligned_steps_to(AlignStepsTo::Smaller)
             );
         }
         #[test]
@@ -500,7 +508,7 @@ mod deconvolution_data {
                         antispikes: None,
                         initial_value: 0.,
                     },
-                }.aligned_steps_to_smaller()
+                }.aligned_steps_to(AlignStepsTo::Smaller)
             );
         }
     }
@@ -542,7 +550,7 @@ mod deconvolution_data {
                         antispikes: None,
                         initial_value: 0.,
                     },
-                }.aligned_steps_to_bigger()
+                }.aligned_steps_to(AlignStepsTo::Bigger)
             );
         }
         #[test]
@@ -581,7 +589,7 @@ mod deconvolution_data {
                         antispikes: None,
                         initial_value: 0.,
                     },
-                }.aligned_steps_to_bigger()
+                }.aligned_steps_to(AlignStepsTo::Bigger)
             );
         }
     }

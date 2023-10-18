@@ -1,5 +1,7 @@
 //! Antispikes.
 
+use toml::Value as TomlValue;
+
 use crate::{
     config::Load,
     float_type::float,
@@ -60,7 +62,7 @@ impl AntispikesType {
 
 
 impl Load for Antispikes {
-    fn load_from_toml_value(toml_value: toml::Value) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         todo!()
     }
 }

@@ -2,7 +2,10 @@
 
 use std::cmp::Ordering;
 
+use toml::Value as TomlValue;
+
 use crate::{
+    config::Load,
     convolution::convolve_by_points,
     deconvolution::Deconvolution,
     fit_algorithms::fit_algorithm::{FitAlgorithm, FitResultOrError},
@@ -42,30 +45,33 @@ impl DeconvolutionData {
         self.instrument.x_start
     }
 
-    /// Internal function to unify `aligned_steps_to_smaller` & `align_steps_to_bigger`.
-    fn aligned_steps_to(mut self, smaller_or_bigger: &'static str) -> Self {
+    /// Make [`step`] in [`instrument`] and [`measured`] same,
+    /// towards smaller/bigger step (more points in total).
+    ///
+    /// [`step`]: SpectrumData::step
+    /// [`instrument`]: DeconvolutionData::instrument
+    /// [`measured`]: DeconvolutionData::measured
+    pub fn aligned_steps_to(mut self, align_steps_to: AlignStepsTo) -> Self {
         match self.instrument.step.partial_cmp(&self.measured.step) {
             Some(Ordering::Equal) => return self,
             Some(Ordering::Less) => {
-                match smaller_or_bigger {
-                    "smaller" => {
+                match align_steps_to {
+                    AlignStepsTo::Smaller => {
                         self.measured = self.measured.recalculated_with_step(self.instrument.step);
                     }
-                    "bigger" => {
+                    AlignStepsTo::Bigger => {
                         self.instrument = self.instrument.recalculated_with_step(self.measured.step);
                     }
-                    _ => unreachable!()
                 }
             }
             Some(Ordering::Greater) => {
-                match smaller_or_bigger {
-                    "smaller" => {
+                match align_steps_to {
+                    AlignStepsTo::Smaller => {
                         self.instrument = self.instrument.recalculated_with_step(self.measured.step);
                     }
-                    "bigger" => {
+                    AlignStepsTo::Bigger => {
                         self.measured = self.measured.recalculated_with_step(self.instrument.step);
                     }
-                    _ => unreachable!()
                 }
             }
             None => panic!("One of the steps is `NaN`")
@@ -73,28 +79,6 @@ impl DeconvolutionData {
         self.assert_steps_is_aligned();
         self
     }
-
-    /// Make [`step`] in [`instrument`] and [`measured`] same,
-    /// towards smaller step (more points in total).
-    ///
-    /// [`step`]: SpectrumData::step
-    /// [`instrument`]: DeconvolutionData::instrument
-    /// [`measured`]: DeconvolutionData::measured
-    pub fn aligned_steps_to_smaller(self) -> Self {
-        self.aligned_steps_to("smaller")
-    }
-
-    /// Make [`step`] in [`instrument`] and [`measured`] same,
-    /// towards bigger step (less points in total).
-    ///
-    /// [`step`]: SpectrumData::step
-    /// [`instrument`]: DeconvolutionData::instrument
-    /// [`measured`]: DeconvolutionData::measured
-    pub fn aligned_steps_to_bigger(self) -> Self {
-        self.aligned_steps_to("bigger")
-    }
-
-    // TODO: align_steps_to_bigger, align_steps_to_smaller
 
     pub fn deconvolve(&self, fit_algorithm: &FitAlgorithm) -> DeconvolutionResultOrError {
         self.assert_steps_is_aligned();
@@ -141,6 +125,27 @@ impl DeconvolutionData {
         let points_convolved: Vec<float> = convolve_by_points(&self.instrument.points, &points_deconvolved);
         assert_eq!(self.measured.points.len(), points_convolved.len());
         points_convolved
+    }
+}
+
+
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AlignStepsTo {
+    Bigger,
+    Smaller,
+}
+
+impl Load for AlignStepsTo {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+        let align_steps_to_str = toml_value
+            .as_str()
+            .expect("align_steps_to: can't parse as string");
+        match align_steps_to_str {
+            "bigger"  => AlignStepsTo::Bigger,
+            "smaller" => AlignStepsTo::Smaller,
+            _ => panic!("unknown `align_steps_to`")
+        }
     }
 }
 

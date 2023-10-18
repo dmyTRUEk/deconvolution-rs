@@ -131,7 +131,7 @@ impl PatternSearchScaledStep {
 
 
 impl Load for PatternSearchScaledStep {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         let fit_algorithm_min_step = toml_value
             .get("fit_algorithm_min_step")
             .expect("fit_params -> pattern_search_scaled_step: `fit_algorithm_min_step` not found")

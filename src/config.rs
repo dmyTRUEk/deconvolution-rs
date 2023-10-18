@@ -9,6 +9,7 @@ use toml::{
 
 use crate::{
     deconvolution::Deconvolution,
+    deconvolution_data::AlignStepsTo,
     fit_algorithms::fit_algorithm::FitAlgorithm,
     float_type::float,
 };
@@ -16,7 +17,7 @@ use crate::{
 
 pub trait Load {
     // TODO: return `Option<Self>`
-    fn load_from_toml_value(toml_value: TomlValue) -> Self;
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self;
 }
 
 
@@ -24,6 +25,7 @@ pub trait Load {
 pub struct Config {
     pub deconvolution_function: ConfigDeconvolutionFunc,
     pub deconvolution_params: ConfigDeconvolutionParams,
+    pub input_params: ConfigInputParams,
     pub output_params: ConfigOutputParams,
     pub fit_algorithm: ConfigFitAlgorithmParams,
 }
@@ -46,29 +48,31 @@ impl Config {
             toml_table
                 .get("deconvolution_function")
                 .expect("load config: `deconvolution_function` not found")
-                .clone()
         );
         let deconvolution_params = ConfigDeconvolutionParams::load_from_toml_value(
             toml_table
                 .get("deconvolution_params")
                 .expect("load config: `deconvolution_params` not found")
-                .clone()
+        );
+        let input_params = ConfigInputParams::load_from_toml_value(
+            toml_table
+                .get("input_params")
+                .expect("load config: `input_params` not found")
         );
         let output_params = ConfigOutputParams::load_from_toml_value(
             toml_table
                 .get("output_params")
                 .expect("load config: `output_params` not found")
-                .clone()
         );
         let fit_algorithm_params = ConfigFitAlgorithmParams::load_from_toml_value(
             toml_table
                 .get("fit_algorithm")
                 .expect("load config: `fit_algorithm` not found")
-                .clone()
         );
         Self {
             deconvolution_function,
             deconvolution_params,
+            input_params,
             output_params,
             fit_algorithm: fit_algorithm_params,
         }
@@ -86,7 +90,7 @@ pub struct ConfigDeconvolutionParams {
     pub print_only_better_deconvolution: bool,
 }
 impl Load for ConfigDeconvolutionParams {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         let try_randomized_initial_values = toml_value
             .get("try_randomized_initial_values")
             .expect("deconvolution_params: `try_randomized_initial_values` not found")
@@ -119,11 +123,28 @@ impl Load for ConfigDeconvolutionParams {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct ConfigInputParams {
+    pub align_step_to: AlignStepsTo,
+}
+impl Load for ConfigInputParams {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+        let align_step_to = AlignStepsTo::load_from_toml_value(
+            toml_value
+                .get("align_step_to")
+                .expect("input_params: `align_step_to` not found")
+        );
+        Self {
+            align_step_to
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct ConfigOutputParams {
     pub significant_digits: u8,
 }
 impl Load for ConfigOutputParams {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
         let significant_digits = toml_value
             .get("significant_digits")
             .expect("output_params: `significant_digits` not found")
@@ -159,8 +180,11 @@ fn load_from_text() {
             change_sing_probability: 0.05,
             print_only_better_deconvolution: true,
         },
+        input_params: ConfigInputParams {
+            align_step_to: AlignStepsTo::Smaller,
+        },
         output_params: ConfigOutputParams {
-            significant_digits: 4
+            significant_digits: 4,
         },
         fit_algorithm: ConfigFitAlgorithmParams::PatternSearch(PatternSearch {
             fit_algorithm_min_step: 1e-4,
@@ -182,6 +206,9 @@ try_randomized_initial_values = 42
 initial_values_random_scale = 10.0
 change_sing_probability = 0.05
 print_only_better_deconvolution = true
+
+[input_params]
+align_step_to = "smaller"
 
 [output_params]
 significant_digits = 4

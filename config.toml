@@ -8,8 +8,7 @@
 # y = a1*exp(-(x-s1)/t1) + …
 # [deconvolution_function.Exponents]
 # diff_function_type = "DySqr"
-# exponents_amount = 2
-# # a0, s0, t0, a1, s1, t1, …
+# # a0, s0, t0,   a1, s1, t1, …
 # initial_values = [
 #     1.0, 1.0, 1.0,
 #     1.0, 1.0, 1.0,
@@ -24,7 +23,7 @@
 # y = a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
 # [deconvolution_function.Two_SatExp_DecExp]
 # diff_function_type = "DySqr"
-# # a1, s1, ta1, tb1, a2, s2, ta2, tb2
+# # a1, s1, ta1, tb1,   a2, s2, ta2, tb2
 # initial_values = [
 #     0.12, 296.0, 3.96, 6.7,
 #     1.16, 310.0, 23.2, 1.79
@@ -62,10 +61,29 @@ initial_values_random_scale = 10.0
 change_sing_probability = 0.05
 print_only_better_deconvolution = true
 
+[input_params]
+align_steps_to = "smaller"
+
 [output_params]
 significant_digits = 4
 
-[fit_algorithm.pattern_search]
+# [fit_algorithm.pattern_search]
+# fit_algorithm_min_step = 1e-4
+# fit_residue_evals_max = 1_000_000
+# fit_residue_max_value = 1e6
+# initial_step = 1.0
+# alpha = 1.1     # step increase coefficient
+# # beta = 0.9    # step decrease coefficient, default = 1/alpha
+
+# [fit_algorithm.pattern_search_scaled_step]
+# fit_algorithm_min_step = 1e-4
+# fit_residue_evals_max = 1_000_000
+# fit_residue_max_value = 1e6
+# initial_step = 1.0
+# alpha = 1.1     # step increase coefficient
+# # beta = 0.9    # step decrease coefficient, default = 1/alpha
+
+[fit_algorithm.pattern_search_adaptive_step]
 fit_algorithm_min_step = 1e-4
 fit_residue_evals_max = 1_000_000
 fit_residue_max_value = 1e6

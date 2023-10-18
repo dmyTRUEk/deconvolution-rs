@@ -7,11 +7,12 @@ use toml::Value as TomlValue;
 use crate::{
     aliases_method_to_function::exp,
     antispikes::Antispikes,
+    config::Load,
     diff_function::DiffFunction,
     exponent_function::ExponentFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
-    utils_io::format_by_dollar_str, config::Load,
+    utils_io::format_by_dollar_str,
 };
 
 
@@ -29,7 +30,6 @@ pub enum Deconvolution {
     /// a1*exp(-(x-s1)/t1) + …
     Exponents {
         diff_function_type: DiffFunction,
-        exponents_amount: usize,
         // initial_values: &'a [float],
         // initial_values: Vec<float>,
         // TODO(refactor): change to `&'static [float]`?
@@ -189,8 +189,8 @@ impl<'a> Deconvolution {
 
         match self {
             Self::PerPoint { .. } => params.to_vec(),
-            Self::Exponents { exponents_amount, .. } => {
-                assert_eq!(exponents_amount * 3, params.len());
+            Self::Exponents { .. } => {
+                assert_eq!(0, params.len() % 3);
                 let exponents: Vec<ExponentFunction> = params
                     .chunks(3).into_iter()
                     .map(|parts| ExponentFunction { amplitude: parts[0], shift: parts[1], tau: parts[2] } )
@@ -433,251 +433,256 @@ impl<'a> Deconvolution {
 
 
 impl Load for Deconvolution {
-    fn load_from_toml_value(toml_value: TomlValue) -> Self {
-        let deconvolution_functions = [
-            toml_value.get("PerPoint"),
-            toml_value.get("Exponents"),
-            toml_value.get("SatExp_DecExp"),
-            toml_value.get("Two_SatExp_DecExp"),
-            toml_value.get("SatExp_DecExpPlusConst"),
-            toml_value.get("SatExp_TwoDecExp"),
-            toml_value.get("SatExp_TwoDecExpPlusConst"),
-            toml_value.get("SatExp_TwoDecExp_SeparateConsts"),
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+        const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 8] = [
+            "PerPoint",
+            "Exponents",
+            "SatExp_DecExp",
+            "Two_SatExp_DecExp",
+            "SatExp_DecExpPlusConst",
+            "SatExp_TwoDecExp",
+            "SatExp_TwoDecExpPlusConst",
+            "SatExp_TwoDecExp_SeparateConsts",
         ];
-        let deconvolution_functions_number = deconvolution_functions.map(|dfv| dfv.is_some()).iter().filter(|&&tf| tf == true).count();
+        let deconvolution_functions = DECONVOLUTION_FUNCTIONS_NAMES
+            .map(|df_name| toml_value.get(df_name));
+        let deconvolution_functions_number = deconvolution_functions
+            .iter()
+            .filter(|df| df.is_some())
+            .count();
         match deconvolution_functions_number.cmp(&1) {
-            Ordering::Less => panic!("no `deconvolution_function`s found"),
-            Ordering::Greater => panic!("too many `deconvolution_function`s found"),
-            Ordering::Equal => {}
+            Ordering::Less    => panic!("no known `deconvolution_function.<name>` found"),
+            Ordering::Greater => panic!("too many `deconvolution_function.<name>` found"),
+            Ordering::Equal   => {}
         }
-        if let Some(toml_value) = toml_value.get("PerPoint") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> PerPoint: `diff_function_type` not found")
-                    .clone()
-            );
-            let antispikes = if let Some(toml_value) = toml_value.get("antispikes") {
-                Some(Antispikes::load_from_toml_value(toml_value.clone()))
-            } else {
-                None
-            };
-            let initial_value = toml_value
-                .get("initial_value")
-                .expect("deconvolution_function -> PerPoint: `initial_value` not found")
-                .as_float()
-                .expect("deconvolution_function -> PerPoint -> initial_value: can't parse as float");
-            Self::PerPoint {
-                diff_function_type,
-                antispikes,
-                initial_value,
+        let deconvolution_function_index = deconvolution_functions
+            .iter()
+            .position(|df| df.is_some())
+            .unwrap();
+        let toml_value = deconvolution_functions[deconvolution_function_index].unwrap();
+        // TODO(refactor)
+        match deconvolution_function_index {
+            0 => { // PerPoint
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> PerPoint: `diff_function_type` not found")
+                );
+                let antispikes = toml_value
+                    .get("antispikes")
+                    .map(Antispikes::load_from_toml_value);
+                let initial_value = toml_value
+                    .get("initial_value")
+                    .expect("deconvolution_function -> PerPoint: `initial_value` not found")
+                    .as_float()
+                    .expect("deconvolution_function -> PerPoint -> initial_value: can't parse as float");
+                Self::PerPoint {
+                    diff_function_type,
+                    antispikes,
+                    initial_value,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("Exponents") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> Exponents: `diff_function_type` not found")
-                    .clone()
-            );
-            let exponents_amount = toml_value
-                .get("exponents_amount")
-                .expect("deconvolution_function -> Exponents: `exponents_amount` not found")
-                .as_integer()
-                .expect("deconvolution_function -> Exponents -> exponents_amount: can't parse as integer");
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> Exponents: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> Exponents -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> Exponents -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect();
-            assert!(exponents_amount >= usize::MIN as i64);
-            assert!(exponents_amount <= usize::MAX as i64);
-            let exponents_amount = exponents_amount as usize;
-            Self::Exponents {
-                diff_function_type,
-                exponents_amount,
-                initial_values,
+            1 => { // Exponents
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> Exponents: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> Exponents: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> Exponents -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> Exponents -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(0, initial_values.len() % 3);
+                Self::Exponents {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("SatExp_DecExp") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> SatExp_DecExp: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> SatExp_DecExp: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> SatExp_DecExp -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..3]
-                .try_into()
-                .expect("deconvolution_function -> SatExp_DecExp -> initial_values: len != 3");
-            Self::SatExp_DecExp {
-                diff_function_type,
-                initial_values,
+            2 => { // SatExp_DecExp
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> SatExp_DecExp: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> SatExp_DecExp: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> SatExp_DecExp -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()//[..3]
+                    .try_into()
+                    .expect("deconvolution_function -> SatExp_DecExp -> initial_values: len != 3");
+                Self::SatExp_DecExp {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("Two_SatExp_DecExp") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> Two_SatExp_DecExp: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> Two_SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..8]
-                .try_into()
-                .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: len != 8");
-            Self::Two_SatExp_DecExp {
-                diff_function_type,
-                initial_values,
+            3 => { // Two_SatExp_DecExp
+                dbg!(toml_value);
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> Two_SatExp_DecExp: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> Two_SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()[..8]
+                    .try_into()
+                    .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: len != 8");
+                Self::Two_SatExp_DecExp {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("SatExp_DecExpPlusConst") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> SatExp_DecExpPlusConst: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> SatExp_DecExpPlusConst: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..5]
-                .try_into()
-                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: len != 5");
-            let allow_tb_less_than_ta = toml_value
-                .get("allow_tb_less_than_ta")
-                .expect("deconvolution_function -> SatExp_DecExpPlusConst: `allow_tb_less_than_ta` not found")
-                .as_bool()
-                .expect("deconvolution_function -> SatExp_DecExpPlusConst -> allow_tb_less_than_ta: can't parse as boolean");
-            Self::SatExp_DecExpPlusConst {
-                diff_function_type,
-                initial_values,
-                allow_tb_less_than_ta,
+            4 => { // SatExp_DecExpPlusConst
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> SatExp_DecExpPlusConst: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()[..5]
+                    .try_into()
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: len != 5");
+                let allow_tb_less_than_ta = toml_value
+                    .get("allow_tb_less_than_ta")
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst: `allow_tb_less_than_ta` not found")
+                    .as_bool()
+                    .expect("deconvolution_function -> SatExp_DecExpPlusConst -> allow_tb_less_than_ta: can't parse as boolean");
+                Self::SatExp_DecExpPlusConst {
+                    diff_function_type,
+                    initial_values,
+                    allow_tb_less_than_ta,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExp") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> SatExp_TwoDecExp: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> SatExp_TwoDecExp: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExp -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..5]
-                .try_into()
-                .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: len != 5");
-            Self::SatExp_TwoDecExp {
-                diff_function_type,
-                initial_values,
+            5 => { // SatExp_TwoDecExp
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> SatExp_TwoDecExp: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> SatExp_TwoDecExp: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> SatExp_TwoDecExp -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()[..5]
+                    .try_into()
+                    .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: len != 5");
+                Self::SatExp_TwoDecExp {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExpPlusConst") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..6]
-                .try_into()
-                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: len != 6");
-            Self::SatExp_TwoDecExpPlusConst {
-                diff_function_type,
-                initial_values,
+            6 => { // SatExp_TwoDecExpPlusConst
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()[..6]
+                    .try_into()
+                    .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: len != 6");
+                Self::SatExp_TwoDecExpPlusConst {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else if let Some(toml_value) = toml_value.get("SatExp_TwoDecExp_SeparateConsts") {
-            let diff_function_type = DiffFunction::load_from_toml_value(
-                toml_value
-                    .get("diff_function_type")
-                    .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `diff_function_type` not found")
-                    .clone()
-            );
-            let initial_values = toml_value
-                .get("initial_values")
-                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `initial_values` not found")
-                .as_array()
-                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: can't parse as list")
-                .iter()
-                .enumerate()
-                .map(|(i, initial_value)| {
-                    initial_value
-                        .as_float()
-                        .expect(&format!("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values[{i}]: can't parse as float"))
-                })
-                .collect::<Vec<_>>()[..6]
-                .try_into()
-                .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: len != 6");
-            Self::SatExp_TwoDecExp_SeparateConsts {
-                diff_function_type,
-                initial_values,
+            7 => { // SatExp_TwoDecExp_SeparateConsts
+                let diff_function_type = DiffFunction::load_from_toml_value(
+                    toml_value
+                        .get("diff_function_type")
+                        .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `diff_function_type` not found")
+                );
+                let initial_values = toml_value
+                    .get("initial_values")
+                    .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts: `initial_values` not found")
+                    .as_array()
+                    .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: can't parse as list")
+                    .iter()
+                    .enumerate()
+                    .map(|(i, initial_value)| {
+                        initial_value
+                            .as_float()
+                            .expect(&format!("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values[{i}]: can't parse as float"))
+                    })
+                    .collect::<Vec<_>>()[..6]
+                    .try_into()
+                    .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: len != 6");
+                Self::SatExp_TwoDecExp_SeparateConsts {
+                    diff_function_type,
+                    initial_values,
+                }
             }
-        }
-        else {
-            panic!("`deconvolution_function` not found")
+            _ => unreachable!()
         }
     }
+}
+
+
+// Domain, Limits, Bounds
+enum ValueDomain {
+    /// -∞ < x < ∞ 
+    Free,
+    /// x == x0
+    Fixed(float),
+    /// x_min < x < x_max 
+    Range(float, float),
 }
 
