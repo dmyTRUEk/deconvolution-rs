@@ -16,7 +16,7 @@ use crate::{
 
 
 pub trait Load {
-    // TODO: return `Option<Self>`
+    // TODO: return `Option/Result<Self>`
     fn load_from_toml_value(toml_value: &TomlValue) -> Self;
 }
 
@@ -35,7 +35,7 @@ impl Config {
     }
     pub fn load_from_file(filename: &str) -> Self {
         let text = read_file_to_string(filename)
-            .expect("can't load config from file");
+            .expect("can't read config file");
         Self::load_from_text(&text)
     }
     fn load_from_text(text: &str) -> Self {

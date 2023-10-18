@@ -552,7 +552,7 @@ impl Load for Deconvolution {
                             .as_float()
                             .expect(&format!("deconvolution_function -> Two_SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
                     })
-                    .collect::<Vec<_>>()[..8]
+                    .collect::<Vec<_>>()//[..8]
                     .try_into()
                     .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: len != 8");
                 Self::Two_SatExp_DecExp {
@@ -578,7 +578,7 @@ impl Load for Deconvolution {
                             .as_float()
                             .expect(&format!("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values[{i}]: can't parse as float"))
                     })
-                    .collect::<Vec<_>>()[..5]
+                    .collect::<Vec<_>>()//[..5]
                     .try_into()
                     .expect("deconvolution_function -> SatExp_DecExpPlusConst -> initial_values: len != 5");
                 let allow_tb_less_than_ta = toml_value
@@ -610,7 +610,7 @@ impl Load for Deconvolution {
                             .as_float()
                             .expect(&format!("deconvolution_function -> SatExp_TwoDecExp -> initial_values[{i}]: can't parse as float"))
                     })
-                    .collect::<Vec<_>>()[..5]
+                    .collect::<Vec<_>>()//[..5]
                     .try_into()
                     .expect("deconvolution_function -> SatExp_TwoDecExp -> initial_values: len != 5");
                 Self::SatExp_TwoDecExp {
@@ -636,7 +636,7 @@ impl Load for Deconvolution {
                             .as_float()
                             .expect(&format!("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values[{i}]: can't parse as float"))
                     })
-                    .collect::<Vec<_>>()[..6]
+                    .collect::<Vec<_>>()//[..6]
                     .try_into()
                     .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: len != 6");
                 Self::SatExp_TwoDecExpPlusConst {
@@ -662,7 +662,7 @@ impl Load for Deconvolution {
                             .as_float()
                             .expect(&format!("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values[{i}]: can't parse as float"))
                     })
-                    .collect::<Vec<_>>()[..6]
+                    .collect::<Vec<_>>()//[..6]
                     .try_into()
                     .expect("deconvolution_function -> SatExp_TwoDecExp_SeparateConsts -> initial_values: len != 6");
                 Self::SatExp_TwoDecExp_SeparateConsts {
