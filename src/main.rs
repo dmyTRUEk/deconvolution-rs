@@ -37,21 +37,28 @@ use utils_io::flush;
 fn main() {
     let config = Config::load_from_default_file();
 
-    let args: Vec<_> = env::args().collect();
-    match &args[..] {
+    let cli_args: Vec<_> = env::args().collect();
+    match &cli_args[..] {
         [_, _] => panic!("Expected at least two filenames (instrumental & measured), provided only one."),
         [_] => panic!("Expected at least two filenames (instrumental & measured), provided zero."),
         [] => unreachable!("Unexpected CLI args number."),
         _ => {}
     }
-    let filepathstr_instrument: &str = &args[1];
+    let filepathstr_instrument: &str = &cli_args[1];
 
     print!("Loading instrumental spectrum  from `{}`...", filepathstr_instrument); flush();
     let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument);
+    let filepathstr_instrument_stem = Path::new(filepathstr_instrument)
+        .file_stem().unwrap().to_str().unwrap();
     println!(" done");
 
-    for filepathstr_measured in args[2..].iter() {
-        process_measured_file(&config, instrument.clone(), filepathstr_instrument, filepathstr_measured);
+    for filepathstr_measured in cli_args[2..].iter() {
+        process_measured_file(
+            &config,
+            instrument.clone(),
+            filepathstr_instrument_stem,
+            filepathstr_measured,
+        );
     }
 }
 
@@ -59,7 +66,7 @@ fn main() {
 fn process_measured_file(
     config: &Config,
     instrument: Spectrum,
-    filepathstr_instrument: &str,
+    filepathstr_instrument_stem: &str,
     filepathstr_measured: &str,
 ) {
     print!("Loading spectrum to deconvolve from `{}`...", filepathstr_measured); flush();
@@ -72,8 +79,8 @@ fn process_measured_file(
     println!("Fit Algorithm = {:#?}", config.fit_algorithm);
     // TODO: fit_algorithm.max_evals.to_string_underscore_separated
 
-    let file_instrument = Path::new(filepathstr_instrument);
-    let file_spectrum   = Path::new(filepathstr_measured);
+    let file_spectrum = Path::new(filepathstr_measured);
+    let filepathstr_spectrum_stem = file_spectrum.file_stem().unwrap().to_str().unwrap();
 
     // TODO: fix: dont work on win7?
     // assert_eq!(
@@ -86,8 +93,8 @@ fn process_measured_file(
     let build_filepathstr_output = |randomized_initial_values_i: u64| -> String {
         let filepath_output = file_spectrum.with_file_name(format!(
             "{FILENAME_PREFIX}_{}_{}{}.dat",
-            file_instrument.file_stem().unwrap().to_str().unwrap(),
-            file_spectrum.file_stem().unwrap().to_str().unwrap(),
+            filepathstr_instrument_stem,
+            filepathstr_spectrum_stem,
             if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
         ));
         let filepathstr_output: String = filepath_output.to_str().unwrap().to_string();
@@ -97,8 +104,8 @@ fn process_measured_file(
     let build_filepathstr_output_convolved = |randomized_initial_values_i: u64| -> String {
         let filepath_output_convolved = file_spectrum.with_file_name(format!(
             "{FILENAME_PREFIX}_{}_{}{}_convolved.dat",
-            file_instrument.file_stem().unwrap().to_str().unwrap(),
-            file_spectrum.file_stem().unwrap().to_str().unwrap(),
+            filepathstr_instrument_stem,
+            filepathstr_spectrum_stem,
             if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
         ));
         let filepathstr_output_convolved: String = filepath_output_convolved.to_str().unwrap().to_string();
