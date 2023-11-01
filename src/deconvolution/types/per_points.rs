@@ -4,9 +4,10 @@ use toml::Value as TomlValue;
 
 use crate::{
     antispikes::Antispikes,
-    config::Load,
     diff_function::DiffFunction,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
@@ -33,26 +34,11 @@ impl DeconvolutionType for PerPoint {
 
 impl Load for PerPoint {
     const TOML_NAME: &'static str = stringify!(PerPoint);
-
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let diff_function_type = DiffFunction::load_from_self_toml_value(
-            toml_value
-                .get("diff_function_type")
-                .expect("deconvolution_function -> PerPoint: `diff_function_type` not found")
-        );
-        let antispikes = toml_value
-            .get("antispikes")
-            .map(Antispikes::load_from_self_toml_value);
-        // let initial_vad = toml_value
-        //     .get("initial_value")
-        //     .expect("deconvolution_function -> PerPoint: `initial_value` not found")
-        //     .as_float()
-        //     .expect("deconvolution_function -> PerPoint -> initial_value: can't parse as float");
-        let initial_vad = InitialValues_PerPoint::load_from_parent_toml_value(toml_value);
-        PerPoint {
-            diff_function_type,
-            antispikes,
-            initial_vad,
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        Self {
+            diff_function_type: DiffFunction::load_from_parent_handle_stacktrace(toml_value, stacktrace),
+            antispikes: Some(Antispikes::load_from_parent_handle_stacktrace(toml_value, stacktrace)),
+            initial_vad: InitialValues_PerPoint::load_from_parent_handle_stacktrace(toml_value, stacktrace),
         }
     }
 }
@@ -105,7 +91,12 @@ impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {}
 
 impl Load for InitialValues_PerPoint<ValueAndDomain> {
     const TOML_NAME: &'static str = "initial_values";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        // let initial_vad = toml_value
+        //     .get("initial_value")
+        //     .expect("deconvolution_function -> PerPoint: `initial_value` not found")
+        //     .as_float()
+        //     .expect("deconvolution_function -> PerPoint -> initial_value: can't parse as float");
         todo!()
     }
 }

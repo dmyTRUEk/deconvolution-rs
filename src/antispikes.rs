@@ -3,8 +3,9 @@
 use toml::Value as TomlValue;
 
 use crate::{
-    config::Load,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 
@@ -61,7 +62,7 @@ impl AntispikesType {
 
 impl Load for Antispikes {
     const TOML_NAME: &'static str = "antispikes";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         todo!()
     }
 }

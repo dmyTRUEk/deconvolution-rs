@@ -4,10 +4,11 @@ use toml::Value as TomlValue;
 
 use crate::{
     aliases_method_to_function::exp,
-    config::Load,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
     utils_io::format_by_dollar_str,
 };
 
@@ -55,31 +56,10 @@ impl DeconvolutionType for Exponents {
 
 impl Load for Exponents {
     const TOML_NAME: &'static str = stringify!(Exponents);
-
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let diff_function_type = DiffFunction::load_from_self_toml_value(
-            toml_value
-                .get("diff_function_type")
-                .expect("deconvolution_function -> Exponents: `diff_function_type` not found")
-        );
-        // let initial_values = toml_value
-        //     .get("initial_values")
-        //     .expect("deconvolution_function -> Exponents: `initial_values` not found")
-        //     .as_array()
-        //     .expect("deconvolution_function -> Exponents -> initial_values: can't parse as list")
-        //     .iter()
-        //     .enumerate()
-        //     .map(|(i, initial_value)| {
-        //         initial_value
-        //             .as_float()
-        //             .expect(&format!("deconvolution_function -> Exponents -> initial_values[{i}]: can't parse as float"))
-        //     })
-        //     .collect::<Vec<_>>();
-        let initial_vads = InitialValues_Exponents::load_from_parent_toml_value(toml_value);
-        // assert_eq!(0, initial_values.len() % 3);
-        Exponents {
-            diff_function_type,
-            initial_vads,
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        Self {
+            diff_function_type: DiffFunction::load_from_parent_handle_stacktrace(toml_value, stacktrace),
+            initial_vads: InitialValues_Exponents::load_from_parent_handle_stacktrace(toml_value, stacktrace),
         }
     }
 }
@@ -146,7 +126,20 @@ impl From<InitialValues_Exponents<ValueAndDomain>> for InitialValues_Exponents<f
 
 impl Load for InitialValues_Exponents<ValueAndDomain> {
     const TOML_NAME: &'static str = "initial_values";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        // let initial_values = toml_value
+        //     .get("initial_values")
+        //     .expect("deconvolution_function -> Exponents: `initial_values` not found")
+        //     .as_array()
+        //     .expect("deconvolution_function -> Exponents -> initial_values: can't parse as list")
+        //     .iter()
+        //     .enumerate()
+        //     .map(|(i, initial_value)| {
+        //         initial_value
+        //             .as_float()
+        //             .expect(&format!("deconvolution_function -> Exponents -> initial_values[{i}]: can't parse as float"))
+        //     })
+        //     .collect::<Vec<_>>();
         todo!()
     }
 }

@@ -4,10 +4,11 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use toml::Value as TomlValue;
 
 use crate::{
-    config::Load,
     deconvolution::deconvolution_data::DeconvolutionData,
     extensions::IndexOfMinWithCeil,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
     utils_io::press_enter_to_continue,
 };
 
@@ -129,49 +130,43 @@ impl PatternSearch {
 
 impl Load for PatternSearch {
     const TOML_NAME: &'static str = "pattern_search";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let fit_algorithm_min_step = toml_value
-            .get("fit_algorithm_min_step")
-            .expect("fit_params -> pattern_search: `fit_algorithm_min_step` not found")
-            .as_float()
-            .expect("fit_params -> pattern_search -> fit_algorithm_min_step: can't parse as float");
-        let fit_residue_evals_max = toml_value
-            .get("fit_residue_evals_max")
-            .expect("fit_params -> pattern_search: `fit_residue_evals_max` not found")
-            .as_integer()
-            .expect("fit_params -> pattern_search -> fit_residue_evals_max: can't parse as integer");
-        let fit_residue_max_value = toml_value
-            .get("fit_residue_max_value")
-            .expect("fit_params -> pattern_search: `fit_residue_max_value` not found")
-            .as_float()
-            .expect("fit_params -> pattern_search -> fit_residue_max_value: can't parse as float");
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        let load_float = |name: &'static str| -> float {
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_float()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
+        };
+        let fit_residue_evals_max = {
+            let name = "fit_residue_evals_max";
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_integer()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+        };
         assert!(fit_residue_evals_max > 0);
         let fit_residue_evals_max = fit_residue_evals_max as u64;
-        let initial_step = toml_value
-            .get("initial_step")
-            .expect("fit_method_params -> pattern_search: `initial_step` not found")
-            .as_float()
-            .expect("fit_method_params -> pattern_search -> initial_step: can't parse as float");
-        let alpha = toml_value
-            .get("alpha")
-            .expect("fit_method_params -> pattern_search: `alpha` not found")
-            .as_float()
-            .expect("fit_method_params -> pattern_search -> alpha: can't parse as float");
-        let beta = if let Some(beta_toml_value) = toml_value.get("beta") {
-            Some(
-                beta_toml_value
-                    .as_float()
-                    .expect("fit_method_params -> pattern_search -> beta: can't parse as float")
-            )
-        } else {
-            None
+        let beta = {
+            let name = "beta";
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .map(|beta_toml_value| {
+                    beta_toml_value
+                        .as_float()
+                        .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
+                })
         };
         Self {
-            fit_algorithm_min_step,
+            fit_algorithm_min_step: load_float("fit_algorithm_min_step"),
             fit_residue_evals_max,
-            fit_residue_max_value,
-            initial_step,
-            alpha,
+            fit_residue_max_value: load_float("fit_residue_max_value"),
+            initial_step: load_float("initial_step"),
+            alpha: load_float("alpha"),
             beta,
         }
     }

@@ -1,13 +1,16 @@
 //! SatExp_TwoDecExpPlusConst
 
+use std::collections::HashMap;
+
 use toml::Value as TomlValue;
 
 use crate::{
     aliases_method_to_function::exp,
-    config::Load,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
     utils_io::format_by_dollar_str,
 };
 
@@ -49,32 +52,10 @@ impl DeconvolutionType for SatExp_TwoDecExpPlusConst {
 
 impl Load for SatExp_TwoDecExpPlusConst {
     const TOML_NAME: &'static str = stringify!(SatExp_TwoDecExpPlusConst);
-
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let diff_function_type = DiffFunction::load_from_self_toml_value(
-            toml_value
-                .get("diff_function_type")
-                .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `diff_function_type` not found")
-        );
-        // let initial_values = toml_value
-        //     .get("initial_values")
-        //     .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst: `initial_values` not found")
-        //     .as_array()
-        //     .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: can't parse as list")
-        //     .iter()
-        //     .enumerate()
-        //     .map(|(i, initial_value)| {
-        //         initial_value
-        //             .as_float()
-        //             .expect(&format!("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values[{i}]: can't parse as float"))
-        //     })
-        //     .collect::<Vec<_>>()//[..6]
-        //     .try_into()
-        //     .expect("deconvolution_function -> SatExp_TwoDecExpPlusConst -> initial_values: len != 6");
-        let initial_vads = InitialValues_SatExp_TwoDecExpPlusConst::load_from_parent_toml_value(toml_value);
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         Self {
-            diff_function_type,
-            initial_vads,
+            diff_function_type: DiffFunction::load_from_parent_handle_stacktrace(toml_value, stacktrace),
+            initial_vads: InitialValues_SatExp_TwoDecExpPlusConst::load_from_parent_handle_stacktrace(toml_value, stacktrace),
         }
     }
 }
@@ -138,8 +119,29 @@ impl From<InitialValues_SatExp_TwoDecExpPlusConst<ValueAndDomain>> for InitialVa
 
 impl Load for InitialValues_SatExp_TwoDecExpPlusConst<ValueAndDomain> {
     const TOML_NAME: &'static str = "initial_values";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        todo!()
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        let str = toml_value
+            .as_str()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"));
+        let ivs: HashMap<String, ValueAndDomain> = str
+            .trim_matches(|c: char| c.is_whitespace() || c == ',')
+            .split(',')
+            .map(|part| part.trim())
+            .map(ValueAndDomain::load_from_str)
+            .collect();
+        let try_get = |name: &'static str| -> ValueAndDomain {
+            *ivs
+                .get(name)
+                .unwrap_or_else(|| stacktrace.pushed(name).panic_not_found())
+        };
+        Self {
+            amplitude: try_get("a"),
+            shift: try_get("s"),
+            height: try_get("h"),
+            tau_a: try_get("a"),
+            tau_b: try_get("b"),
+            tau_c: try_get("c"),
+        }
     }
 }
 

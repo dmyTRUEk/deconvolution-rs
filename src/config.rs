@@ -10,28 +10,11 @@ use toml::{
 use crate::{
     fit_algorithms::fit_algorithm::FitAlgorithm,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 use super::deconvolution::{Deconvolution, deconvolution_data::AlignStepsTo};
-
-
-pub trait Load {
-    const TOML_NAME: &'static str;
-    // TODO: return `Option/Result<Self>`
-    fn load_from_parent_toml_value(toml_value: &TomlValue) -> Self
-    where Self: Sized
-    {
-        // dbg!(Self::TOML_NAME, toml_value);
-        Self::load_from_self_toml_value(
-            toml_value
-                .get(Self::TOML_NAME)
-                // .unwrap()
-                .unwrap_or_else(|| panic!("{}", todo!("WRITE MONADIC ERROR MASSAGES HANDLING")))
-        )
-    }
-    // TODO: return `Option/Result<Self>`
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self;
-}
 
 
 
@@ -62,37 +45,12 @@ impl Config {
         Self::load_from_toml_value(&toml_value)
     }
     fn load_from_toml_value(toml_value: &TomlValue) -> Self {
-        let deconvolution_function = ConfigDeconvolutionFunc::load_from_parent_toml_value(
-            toml_value
-                // .get("deconvolution_function")
-                // .expect("load config: `deconvolution_function` not found")
-        );
-        let deconvolution_params = ConfigDeconvolutionParams::load_from_parent_toml_value(
-            toml_value
-                // .get("deconvolution_params")
-                // .expect("load config: `deconvolution_params` not found")
-        );
-        let input_params = ConfigInputParams::load_from_parent_toml_value(
-            toml_value
-                // .get("input_params")
-                // .expect("load config: `input_params` not found")
-        );
-        let output_params = ConfigOutputParams::load_from_parent_toml_value(
-            toml_value
-                // .get("output_params")
-                // .expect("load config: `output_params` not found")
-        );
-        let fit_algorithm_params = ConfigFitAlgorithmParams::load_from_parent_toml_value(
-            toml_value
-                // .get("fit_algorithm")
-                // .expect("load config: `fit_algorithm` not found")
-        );
         Self {
-            deconvolution_function,
-            deconvolution_params,
-            input_params,
-            output_params,
-            fit_algorithm: fit_algorithm_params,
+            deconvolution_function: ConfigDeconvolutionFunc::load_from_parent_as_root(toml_value),
+            deconvolution_params: ConfigDeconvolutionParams::load_from_parent_as_root(toml_value),
+            input_params: ConfigInputParams::load_from_parent_as_root(toml_value),
+            output_params: ConfigOutputParams::load_from_parent_as_root(toml_value),
+            fit_algorithm: ConfigFitAlgorithmParams::load_from_parent_as_root(toml_value),
         }
     }
 }
@@ -109,33 +67,39 @@ pub struct ConfigDeconvolutionParams {
 }
 impl Load for ConfigDeconvolutionParams {
     const TOML_NAME: &'static str = "deconvolution_params";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let try_randomized_initial_values = toml_value
-            .get("try_randomized_initial_values")
-            .expect("deconvolution_params: `try_randomized_initial_values` not found")
-            .as_integer()
-            .expect("deconvolution_params -> try_randomized_initial_values: can't parse as integer");
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        let load_float = |name: &'static str| -> float {
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_float()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
+        };
+        let try_randomized_initial_values = {
+            let name = "try_randomized_initial_values";
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_integer()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+        };
         assert!(try_randomized_initial_values >= 0);
         let try_randomized_initial_values: u64 = try_randomized_initial_values as u64;
-        let initial_values_random_scale = toml_value
-            .get("initial_values_random_scale")
-            .expect("deconvolution_params: `initial_values_random_scale` not found")
-            .as_float()
-            .expect("deconvolution_params -> initial_values_random_scale: can't parse as float");
-        let change_sing_probability = toml_value
-            .get("change_sing_probability")
-            .expect("deconvolution_params: `change_sing_probability` not found")
-            .as_float()
-            .expect("deconvolution_params -> change_sing_probability: can't parse as float");
-        let print_only_better_deconvolution = toml_value
-            .get("print_only_better_deconvolution")
-            .expect("deconvolution_params: `print_only_better_deconvolution` not found")
-            .as_bool()
-            .expect("deconvolution_params -> print_only_better_deconvolution: can't parse as bool");
+        let print_only_better_deconvolution = {
+            let name = "print_only_better_deconvolution";
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_bool()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("bool"))
+        };
         Self {
             try_randomized_initial_values,
-            initial_values_random_scale,
-            change_sing_probability,
+            initial_values_random_scale: load_float("initial_values_random_scale"),
+            change_sing_probability: load_float("change_sing_probability"),
             print_only_better_deconvolution,
         }
     }
@@ -147,14 +111,9 @@ pub struct ConfigInputParams {
 }
 impl Load for ConfigInputParams {
     const TOML_NAME: &'static str = "input_params";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let align_step_to = AlignStepsTo::load_from_parent_toml_value(
-            toml_value
-                // .get("align_step_to")
-                // .expect("input_params: `align_step_to` not found")
-        );
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         Self {
-            align_step_to,
+            align_step_to: AlignStepsTo::load_from_parent_handle_stacktrace(toml_value, stacktrace),
         }
     }
 }
@@ -165,12 +124,16 @@ pub struct ConfigOutputParams {
 }
 impl Load for ConfigOutputParams {
     const TOML_NAME: &'static str = "output_params";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let significant_digits = toml_value
-            .get("significant_digits")
-            .expect("output_params: `significant_digits` not found")
-            .as_integer()
-            .expect("output_params -> significant_digits: can't parse as integer");
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        let significant_digits = {
+            let name = "significant_digits";
+            let stacktrace = stacktrace.pushed(name);
+            toml_value
+                .get(name)
+                .unwrap_or_else(|| stacktrace.panic_not_found())
+                .as_integer()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+        };
         assert!(significant_digits < 20);
         let significant_digits = significant_digits as u8;
         Self {
@@ -257,7 +220,7 @@ alpha = 1.1     # step increase coefficient
     assert_eq!(config_expected, config_actual);
 }
 
-#[should_panic(expected = "deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")]
+#[should_panic(expected = "`deconvolution_function` -> `Two_SatExp_DecExp` -> `diff_function_type`: not found")]
 #[test]
 fn load_from_text_panic() {
     Config::load_from_text(

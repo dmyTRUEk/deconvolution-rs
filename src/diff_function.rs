@@ -6,8 +6,9 @@ use toml::Value as TomlValue;
 
 use crate::{
     antispikes::Antispikes,
-    config::Load,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 
@@ -77,12 +78,12 @@ impl FromStr for DiffFunction {
 
 impl Load for DiffFunction {
     const TOML_NAME: &'static str = "diff_function_type";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         DiffFunction::from_str(
             toml_value
                 .as_str()
-                .expect("diff_function_type: can't parse as string")
-        ).expect("diff_function_type: unknown type")
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"))
+        ).unwrap_or_else(|_| stacktrace.panic("unknown type"))
     }
 }
 

@@ -1,14 +1,16 @@
 //! SatExp_DecExp
 
+use std::collections::HashMap;
+
 use toml::Value as TomlValue;
 
 use crate::{
     aliases_method_to_function::exp,
-    config::Load,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
-    utils_io::format_by_dollar_str,
+    load::Load,
+    utils_io::format_by_dollar_str, stacktrace::Stacktrace,
 };
 
 use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
@@ -46,17 +48,10 @@ impl DeconvolutionType for SatExp_DecExp {
 
 impl Load for SatExp_DecExp {
     const TOML_NAME: &'static str = stringify!(SatExp_DecExp);
-
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        let diff_function_type = DiffFunction::load_from_self_toml_value(
-            toml_value
-                .get("diff_function_type")
-                .expect("deconvolution_function -> SatExp_DecExp: `diff_function_type` not found")
-        );
-        let initial_vads = InitialValues_SatExp_DecExp::load_from_parent_toml_value(toml_value);
-        SatExp_DecExp {
-            diff_function_type,
-            initial_vads,
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        Self {
+            diff_function_type: DiffFunction::load_from_parent_handle_stacktrace(toml_value, stacktrace),
+            initial_vads: InitialValues_SatExp_DecExp::load_from_parent_handle_stacktrace(toml_value, stacktrace),
         }
     }
 }
@@ -133,24 +128,28 @@ impl From<InitialValues_SatExp_DecExp<ValueAndDomain>> for InitialValues_SatExp_
 
 impl Load for InitialValues_SatExp_DecExp<ValueAndDomain> {
     const TOML_NAME: &'static str = "initial_values";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
-        // let initial_vads = toml_value
-        //     .get("initial_values")
-        //     .expect("deconvolution_function -> SatExp_DecExp: `initial_values` not found")
-        //     .as_array()
-        //     .expect("deconvolution_function -> SatExp_DecExp -> initial_values: can't parse as list")
-        //     .iter()
-        //     .enumerate()
-        //     .map(|(i, initial_value)| {
-        //         // initial_value
-        //         //     .as_float()
-        //         //     .expect(&format!("deconvolution_function -> SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
-        //         ValueAndDomain::load_from_self_toml_value(initial_value)
-        //     })
-        //     .collect::<Vec<_>>()//[..3]
-        //     .try_into()
-        //     .expect("deconvolution_function -> SatExp_DecExp -> initial_values: len != 3");
-        todo!()
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
+        let str = toml_value
+            .as_str()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"));
+        let ivs: HashMap<String, ValueAndDomain> = str
+            .trim_matches(|c: char| c.is_whitespace() || c == ',')
+            .split(',')
+            .map(|part| part.trim())
+            .map(ValueAndDomain::load_from_str)
+            .collect();
+        let try_get = |name: &'static str| -> ValueAndDomain {
+            *ivs
+                .get(name)
+                .unwrap_or_else(|| stacktrace.pushed(name).panic_not_found())
+        };
+        Self {
+            // amplitude: try_get("a"),
+            shift: try_get("s"),
+            tau_a: try_get("ta"),
+            tau_b: try_get("tb"),
+        }
+
     }
 }
 

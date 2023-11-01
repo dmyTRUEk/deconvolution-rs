@@ -21,8 +21,10 @@ mod exponent_function;
 mod extensions;
 mod fit_algorithms;
 mod float_type;
+mod load;
 mod macros;
 mod spectrum;
+mod stacktrace;
 mod utils_io;
 
 use config::Config;

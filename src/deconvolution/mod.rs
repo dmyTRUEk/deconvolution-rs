@@ -11,8 +11,9 @@ use std::cmp::Ordering;
 use toml::Value as TomlValue;
 
 use crate::{
-    config::Load,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 use self::types::{
@@ -20,7 +21,7 @@ use self::types::{
     InitialValuesGeneric,
     InitialValuesVAD,
     exponents::{Exponents, InitialValues_Exponents},
-    per_points::{InitialValues_PerPoint, PerPoint},
+    per_points::PerPoint,
     sat_exp__dec_exp::{InitialValues_SatExp_DecExp, SatExp_DecExp},
     sat_exp__dec_exp_plus_const::{InitialValues_SatExp_DecExpPlusConst, SatExp_DecExpPlusConst},
     sat_exp__two_dec_exp::{InitialValues_SatExp_TwoDecExp, SatExp_TwoDecExp},
@@ -169,7 +170,7 @@ impl<'a> Deconvolution {
 
 impl Load for Deconvolution {
     const TOML_NAME: &'static str = "deconvolution_function";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 8] = [
             PerPoint::TOML_NAME,
             Exponents::TOML_NAME,
@@ -187,8 +188,8 @@ impl Load for Deconvolution {
             .filter(|df| df.is_some())
             .count();
         match deconvolution_functions_number.cmp(&1) {
-            Ordering::Less    => panic!("no known `deconvolution_function.<name>` found"),
-            Ordering::Greater => panic!("too many `deconvolution_function.<name>` found"),
+            Ordering::Less    => stacktrace.panic(&format!("no known `{}.<name>` found", Self::TOML_NAME)),
+            Ordering::Greater => stacktrace.panic(&format!("too many `{}.<name>` found", Self::TOML_NAME)),
             Ordering::Equal   => {}
         }
         let deconvolution_function_index = deconvolution_functions
@@ -196,16 +197,16 @@ impl Load for Deconvolution {
             .position(|df| df.is_some())
             .unwrap();
         let toml_value = deconvolution_functions[deconvolution_function_index].unwrap();
-        // TODO(refactor): dont use numbers, bc they must be in sync with `DECONVOLUTION_FUNCTIONS_NAMES`
+        // TODO(refactor): dont use numbers, bc they must be kept in sync with `DECONVOLUTION_FUNCTIONS_NAMES`
         match deconvolution_function_index {
-            0 => Self::PerPoint(PerPoint::load_from_self_toml_value(toml_value)),
-            1 => Self::Exponents(Exponents::load_from_self_toml_value(toml_value)),
-            2 => Self::SatExp_DecExp(SatExp_DecExp::load_from_self_toml_value(toml_value)),
-            3 => Self::SatExp_TwoDecExp(SatExp_TwoDecExp::load_from_self_toml_value(toml_value)),
-            4 => Self::Two_SatExp_DecExp(Two_SatExp_DecExp::load_from_self_toml_value(toml_value)),
-            5 => Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst::load_from_self_toml_value(toml_value)),
-            6 => Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst::load_from_self_toml_value(toml_value)),
-            7 => Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts::load_from_self_toml_value(toml_value)),
+            0 => Self::PerPoint(PerPoint::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            1 => Self::Exponents(Exponents::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            2 => Self::SatExp_DecExp(SatExp_DecExp::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            3 => Self::SatExp_TwoDecExp(SatExp_TwoDecExp::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            4 => Self::Two_SatExp_DecExp(Two_SatExp_DecExp::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            5 => Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            6 => Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            7 => Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }

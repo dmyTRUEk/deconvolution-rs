@@ -5,10 +5,10 @@ use std::{cmp::Ordering, fs::File, io::Write};
 use toml::Value as TomlValue;
 
 use crate::{
-    config::Load,
     fit_algorithms::fit_algorithm::{Fit, FitAlgorithm, FitResult},
     float_type::float,
-    spectrum::Spectrum,
+    load::Load,
+    spectrum::Spectrum, stacktrace::Stacktrace,
 };
 
 use super::{
@@ -255,14 +255,14 @@ pub enum AlignStepsTo {
 
 impl Load for AlignStepsTo {
     const TOML_NAME: &'static str = "align_steps_to";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         let align_steps_to_str = toml_value
             .as_str()
-            .expect("align_steps_to: can't parse as string");
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"));
         match align_steps_to_str {
             "bigger"  => AlignStepsTo::Bigger,
             "smaller" => AlignStepsTo::Smaller,
-            _ => panic!("unknown `align_steps_to`")
+            _ => stacktrace.panic("unknown type, known types: [`bigger`, `smaller`]")
         }
     }
 }

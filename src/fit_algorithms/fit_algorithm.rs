@@ -5,9 +5,10 @@ use std::cmp::Ordering;
 use toml::Value as TomlValue;
 
 use crate::{
-    config::Load,
     deconvolution::deconvolution_data::DeconvolutionData,
     float_type::float,
+    load::Load,
+    stacktrace::Stacktrace,
 };
 
 use super::{
@@ -54,7 +55,7 @@ impl FitAlgorithm {
 
 impl Load for FitAlgorithm {
     const TOML_NAME: &'static str = "fit_algorithm";
-    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+    fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         const FIT_ALGORITHMS_NAMES: [&'static str; 3] = [
             PatternSearch::TOML_NAME,
             PatternSearchScaledStep::TOML_NAME,
@@ -67,8 +68,8 @@ impl Load for FitAlgorithm {
             .filter(|fa| fa.is_some())
             .count();
         match fit_algorithms_number.cmp(&1) {
-            Ordering::Less    => panic!("no known `fit_algorithm.<name>` found"),
-            Ordering::Greater => panic!("too many `fit_algorithm.<name>` found"),
+            Ordering::Less    => stacktrace.panic(&format!("no known `{}.<name>` found", Self::TOML_NAME)),
+            Ordering::Greater => stacktrace.panic(&format!("too many `{}.<name>` found", Self::TOML_NAME)),
             Ordering::Equal => {}
         }
         let fit_algorithm_index = fit_algorithms
@@ -76,17 +77,11 @@ impl Load for FitAlgorithm {
             .position(|fa| fa.is_some())
             .unwrap();
         let toml_value = fit_algorithms[fit_algorithm_index].unwrap();
-        // TODO(refactor)
+        // TODO(refactor): dont use numbers, bc they must be kept in sync with `FIT_ALGORITHMS_NAMES`
         match fit_algorithm_index {
-            0 => Self::PatternSearch(
-                PatternSearch::load_from_self_toml_value(toml_value)
-            ),
-            1 => Self::PatternSearchScaledStep(
-                PatternSearchScaledStep::load_from_self_toml_value(toml_value)
-            ),
-            2 => Self::PatternSearchAdaptiveStep(
-                PatternSearchAdaptiveStep::load_from_self_toml_value(toml_value)
-            ),
+            0 => Self::PatternSearch(PatternSearch::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            1 => Self::PatternSearchScaledStep(PatternSearchScaledStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            2 => Self::PatternSearchAdaptiveStep(PatternSearchAdaptiveStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }
