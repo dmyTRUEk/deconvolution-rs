@@ -5,13 +5,13 @@ use toml::Value as TomlValue;
 
 use crate::{
     config::Load,
-    deconvolution_data::DeconvolutionData,
+    deconvolution::deconvolution_data::DeconvolutionData,
     extensions::IndexOfMinWithCeil,
     float_type::float,
     utils_io::press_enter_to_continue,
 };
 
-use super::fit_algorithm::{FitResult, FitResultOrError};
+use super::fit_algorithm::{Fit, FitResult};
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,7 +27,7 @@ pub struct PatternSearchAdaptiveStep {
 }
 
 impl PatternSearchAdaptiveStep {
-    pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResultOrError {
+    pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResult {
         const DEBUG: bool = false;
 
         let PatternSearchAdaptiveStep { fit_algorithm_min_step, fit_residue_evals_max, fit_residue_max_value, initial_step, alpha, beta } = self.clone();
@@ -120,7 +120,7 @@ impl PatternSearchAdaptiveStep {
         }
         if DEBUG { println!("finished in {} iters", fit_residue_evals) }
         let fit_residue = res_at_current_params;
-        Ok(FitResult {
+        Ok(Fit {
             params,
             fit_residue,
             fit_residue_evals,
@@ -130,7 +130,8 @@ impl PatternSearchAdaptiveStep {
 
 
 impl Load for PatternSearchAdaptiveStep {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "pattern_search_adaptive_step";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         let fit_algorithm_min_step = toml_value
             .get("fit_algorithm_min_step")
             .expect("fit_params -> pattern_search_adaptive_step: `fit_algorithm_min_step` not found")

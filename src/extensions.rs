@@ -189,6 +189,38 @@ impl SeparateChunksFromEnd for &str {
     }
 }
 
+
+pub trait SplitAndKeep {
+    fn split_and_keep(&self, func: impl Fn(char) -> bool) -> Vec<&str>;
+}
+impl SplitAndKeep for &str {
+    fn split_and_keep(&self, pattern: impl Fn(char) -> bool) -> Vec<&str> {
+        if self.len() == 0 { return vec![] }
+        else if self.len() == 1 { return vec![self] }
+        let parts: Vec<&str> = self.split_inclusive(&pattern).collect();
+        // dbg!(&parts);
+        let mut res: Vec<&str> = vec![];
+        for i in 0..parts.len()-1 {
+            // dbg!(i, &parts[i]);
+            let (lhs, rhs) = parts[i].split_at(parts[i].len()-1);
+            if lhs != "" { res.push(lhs) }
+            if rhs != "" { res.push(rhs) }
+            // dbg!(&res);
+        }
+        let last_part = parts.last().unwrap();
+        if let Some(index) = last_part.find(pattern) {
+            let (lhs, rhs) = last_part.split_at(index);
+            if lhs != "" { res.push(lhs) };
+            if rhs != "" { res.push(rhs) };
+        } else {
+            res.push(last_part);
+        };
+        // dbg!(&res);
+        res
+    }
+}
+
+
 pub trait ToStringUnderscoreSeparated {
     fn to_string_underscore_separated(&self) -> String;
 }
@@ -201,27 +233,38 @@ impl ToStringUnderscoreSeparated for u64 {
 
 
 pub trait ToStringWithSignificantDigits {
-    fn to_string_with_significant_digits(&self, significant_digits: usize) -> String;
+    fn to_string_with_significant_digits(&self, significant_digits: u8) -> String;
 }
 impl ToStringWithSignificantDigits for f64 {
-    fn to_string_with_significant_digits(&self, precision: usize) -> String {
+    fn to_string_with_significant_digits(&self, precision: u8) -> String {
         let a = self.abs();
-        let precision = if a > 1. {
-            let n = (1. + a.log10().floor()) as usize;
-            if n <= precision {
-                precision - n
-            } else {
-                0
-            }
-        } else if a > 0. {
-            let n = -(1. + a.log10().floor()) as usize;
-            precision + n
+        let precision = precision as i8;
+        let precision = if a > 0. {
+            let n = (1. + a.log10().floor()) as i8;
+            (precision - n).max(0)
         } else {
             0
         };
-        format!("{0:.1$}", self, precision)
+        format!("{0:.1$}", self, precision as usize)
     }
 }
+
+
+// pub trait TryToArray<T> {
+//     fn try_to_array<const N: usize>(&self) -> [T; N];
+// }
+// impl TryToArray<f64> for Vec<f64> {
+//     fn try_to_array<const N: usize>(&self) -> [f64; N] {
+//         assert_eq!(N, self.len());
+//         match N {
+//             // 0 => [],
+//             1 => [self[0]],
+//             2 => [self[0], self[1]],
+//             3 => [self[0], self[1], self[2]],
+//             _ => unimplemented!()
+//         }
+//     }
+// }
 
 
 
@@ -387,15 +430,90 @@ mod separate_chunks_from_end {
 }
 
 #[cfg(test)]
+mod split_and_keep {
+    use super::SplitAndKeep;
+    #[test]
+    fn empty() {
+        assert_eq!(
+            Vec::<&str>::new(),
+            "".split_and_keep(|c| c == ' ')
+        );
+    }
+    #[test]
+    fn single_element() {
+        assert_eq!(
+            vec!["+"],
+            "+".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn two_elements() {
+        assert_eq!(
+            vec!["+", "+"],
+            "++".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn dash_a_dash() {
+        assert_eq!(
+            vec!["-", "a", "-"],
+            "-a-".split_and_keep(|c| c == '-')
+        );
+    }
+    #[test]
+    fn _2_plus_2() {
+        assert_eq!(
+            vec!["2", "+", "2"],
+            "2+2".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn _2_plus_2_with_spaces() {
+        assert_eq!(
+            vec!["2 ", "+", " 2"],
+            "2 + 2".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn _1_plus_2_plus_3() {
+        assert_eq!(
+            vec!["1 ", "+", " 2  ", "+", "   3"],
+            "1 + 2  +   3".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn _1_plus_2_minus_3() {
+        assert_eq!(
+            vec!["1 ", "+", " 2  ", "-", "   3"],
+            "1 + 2  -   3".split_and_keep(|c| c == '+' || c == '-')
+        );
+    }
+    #[test]
+    fn abc_plus_def() {
+        assert_eq!(
+            vec!["abc ", "+", " def"],
+            "abc + def".split_and_keep(|c| c == '+')
+        );
+    }
+    #[test]
+    fn abc_dash_def_dash() {
+        assert_eq!(
+            vec![" ", "-", " abc ", "-", " def ", "-"],
+            " - abc - def -".split_and_keep(|c| c == '-')
+        );
+    }
+}
+
+#[cfg(test)]
 mod to_string_with_significant_digits {
     use super::ToStringWithSignificantDigits;
     mod _1234_5678 {
         use super::*;
         const X: f64 = 1234.5678;
-        // anser isn't 1234 but 1235, bc of rounding
         // #[ignore]
         #[test]
         fn _0() {
+            // anwser isn't 1234 but 1235, bc of rounding
             assert_eq!("1235", X.to_string_with_significant_digits(0));
         }
         #[test]

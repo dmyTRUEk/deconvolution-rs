@@ -35,8 +35,7 @@ impl AntispikesType {
             Self::DySqr => {
                 let mut res: float = 0.;
                 for points in [points_1, points_2] {
-                    for point_prev_next in points.windows(2).into_iter() {
-                        let (point_prev, point_next) = (point_prev_next[0], point_prev_next[1]);
+                    for [point_prev, point_next] in points.array_windows() {
                         let delta = point_next - point_prev;
                         let delta = delta.powi(2); // TODO(refactor): rename var
                         res += delta;
@@ -47,8 +46,7 @@ impl AntispikesType {
             Self::DyAbs => {
                 let mut res: float = 0.;
                 for points in [points_1, points_2] {
-                    for point_prev_next in points.windows(2).into_iter() {
-                        let (point_prev, point_next) = (point_prev_next[0], point_prev_next[1]);
+                    for [point_prev, point_next] in points.array_windows() {
                         let delta = point_next - point_prev;
                         let delta = delta.abs(); // TODO(refactor): rename var
                         res += delta;
@@ -62,7 +60,8 @@ impl AntispikesType {
 
 
 impl Load for Antispikes {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "antispikes";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         todo!()
     }
 }

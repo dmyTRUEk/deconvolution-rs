@@ -6,7 +6,7 @@ use toml::Value as TomlValue;
 
 use crate::{
     config::Load,
-    deconvolution_data::DeconvolutionData,
+    deconvolution::deconvolution_data::DeconvolutionData,
     float_type::float,
 };
 
@@ -18,15 +18,15 @@ use super::{
 
 
 #[derive(Debug)]
-pub struct FitResult {
+pub struct Fit {
     pub params: Vec<float>,
     pub fit_residue: float,
     pub fit_residue_evals: u64,
 }
 
 
-// type FitResultsOrNone = Option<FitResults>;
-pub type FitResultOrError = Result<FitResult, &'static str>;
+// type FitResult = Option<Fit>;
+pub type FitResult = Result<Fit, &'static str>;
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,7 +37,7 @@ pub enum FitAlgorithm {
 }
 
 impl FitAlgorithm {
-    pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResultOrError {
+    pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResult {
         match &self {
             FitAlgorithm::PatternSearch(ps) => {
                 ps.fit(deconvolution_data)
@@ -52,14 +52,13 @@ impl FitAlgorithm {
     }
 }
 
-
-
 impl Load for FitAlgorithm {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "fit_algorithm";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         const FIT_ALGORITHMS_NAMES: [&'static str; 3] = [
-            "pattern_search",
-            "pattern_search_scaled_step",
-            "pattern_search_adaptive_step",
+            PatternSearch::TOML_NAME,
+            PatternSearchScaledStep::TOML_NAME,
+            PatternSearchAdaptiveStep::TOML_NAME,
         ];
         let fit_algorithms = FIT_ALGORITHMS_NAMES
             .map(|fa_name| toml_value.get(fa_name));
@@ -80,13 +79,13 @@ impl Load for FitAlgorithm {
         // TODO(refactor)
         match fit_algorithm_index {
             0 => Self::PatternSearch(
-                PatternSearch::load_from_toml_value(toml_value)
+                PatternSearch::load_from_self_toml_value(toml_value)
             ),
             1 => Self::PatternSearchScaledStep(
-                PatternSearchScaledStep::load_from_toml_value(toml_value)
+                PatternSearchScaledStep::load_from_self_toml_value(toml_value)
             ),
             2 => Self::PatternSearchAdaptiveStep(
-                PatternSearchAdaptiveStep::load_from_toml_value(toml_value)
+                PatternSearchAdaptiveStep::load_from_self_toml_value(toml_value)
             ),
             _ => unreachable!()
         }

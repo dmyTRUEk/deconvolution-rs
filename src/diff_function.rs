@@ -76,7 +76,8 @@ impl FromStr for DiffFunction {
 
 
 impl Load for DiffFunction {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "diff_function_type";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         DiffFunction::from_str(
             toml_value
                 .as_str()

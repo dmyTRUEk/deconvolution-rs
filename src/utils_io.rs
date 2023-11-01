@@ -26,7 +26,8 @@ pub fn flush() {
     stdout().flush().unwrap();
 }
 
-// better way is to make it macros
+
+// TODO: make it macros
 pub fn format_by_dollar_digit(str_to_fmt: &str, params: Vec<&str>) -> String {
     const MAX_ITERS: u32 = 10_000;
     let mut str_fmted: String = str_to_fmt.to_string();
@@ -42,11 +43,12 @@ pub fn format_by_dollar_digit(str_to_fmt: &str, params: Vec<&str>) -> String {
     panic!("hit max iters");
 }
 
+// TODO: make it macros
 pub fn format_by_dollar_char(str_to_fmt: &str, params: Vec<(char, &str)>) -> String {
     const MAX_ITERS: u32 = 10_000;
-    let params_vec_len = params.len();
+    let params_len: usize = params.len();
     let params_hm: HashMap<char, &str> = params.into_iter().collect();
-    assert_eq!(params_vec_len, params_hm.len(), "found duplicate in params");
+    assert_eq!(params_len, params_hm.len(), "found duplicate in params");
     let mut str_fmted: String = str_to_fmt.to_string();
     for _ in 0..MAX_ITERS {
         match str_fmted.find('$') {
@@ -60,12 +62,13 @@ pub fn format_by_dollar_char(str_to_fmt: &str, params: Vec<(char, &str)>) -> Str
     panic!("hit max iters");
 }
 
+// TODO: make it macros
 pub fn format_by_dollar_str(str_to_fmt: &str, params: Vec<(&str, &str)>) -> String {
     const MAX_ITERS: u32 = 10_000;
     const MAX_PARAM_NAME_LEN: usize = 100;
-    let params_vec_len = params.len();
+    let params_len: usize = params.len();
     let params_hm: HashMap<&str, &str> = params.into_iter().collect();
-    assert_eq!(params_vec_len, params_hm.len(), "found duplicate in params");
+    assert_eq!(params_len, params_hm.len(), "found duplicate in params");
     let mut str_fmted: String = str_to_fmt.to_string();
     for _ in 0..MAX_ITERS {
         match str_fmted.find('$') {

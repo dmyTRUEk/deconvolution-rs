@@ -8,17 +8,31 @@ use toml::{
 };
 
 use crate::{
-    deconvolution::Deconvolution,
-    deconvolution_data::AlignStepsTo,
     fit_algorithms::fit_algorithm::FitAlgorithm,
     float_type::float,
 };
 
+use super::deconvolution::{Deconvolution, deconvolution_data::AlignStepsTo};
+
 
 pub trait Load {
+    const TOML_NAME: &'static str;
     // TODO: return `Option/Result<Self>`
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self;
+    fn load_from_parent_toml_value(toml_value: &TomlValue) -> Self
+    where Self: Sized
+    {
+        // dbg!(Self::TOML_NAME, toml_value);
+        Self::load_from_self_toml_value(
+            toml_value
+                .get(Self::TOML_NAME)
+                // .unwrap()
+                .unwrap_or_else(|| panic!("{}", todo!("WRITE MONADIC ERROR MASSAGES HANDLING")))
+        )
+    }
+    // TODO: return `Option/Result<Self>`
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self;
 }
+
 
 
 #[derive(Debug, PartialEq)]
@@ -44,30 +58,34 @@ impl Config {
         Self::load_from_toml_table(toml_table)
     }
     fn load_from_toml_table(toml_table: TomlTable) -> Self {
-        let deconvolution_function = ConfigDeconvolutionFunc::load_from_toml_value(
-            toml_table
-                .get("deconvolution_function")
-                .expect("load config: `deconvolution_function` not found")
+        let toml_value: TomlValue = toml_table.into();
+        Self::load_from_toml_value(&toml_value)
+    }
+    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+        let deconvolution_function = ConfigDeconvolutionFunc::load_from_parent_toml_value(
+            toml_value
+                // .get("deconvolution_function")
+                // .expect("load config: `deconvolution_function` not found")
         );
-        let deconvolution_params = ConfigDeconvolutionParams::load_from_toml_value(
-            toml_table
-                .get("deconvolution_params")
-                .expect("load config: `deconvolution_params` not found")
+        let deconvolution_params = ConfigDeconvolutionParams::load_from_parent_toml_value(
+            toml_value
+                // .get("deconvolution_params")
+                // .expect("load config: `deconvolution_params` not found")
         );
-        let input_params = ConfigInputParams::load_from_toml_value(
-            toml_table
-                .get("input_params")
-                .expect("load config: `input_params` not found")
+        let input_params = ConfigInputParams::load_from_parent_toml_value(
+            toml_value
+                // .get("input_params")
+                // .expect("load config: `input_params` not found")
         );
-        let output_params = ConfigOutputParams::load_from_toml_value(
-            toml_table
-                .get("output_params")
-                .expect("load config: `output_params` not found")
+        let output_params = ConfigOutputParams::load_from_parent_toml_value(
+            toml_value
+                // .get("output_params")
+                // .expect("load config: `output_params` not found")
         );
-        let fit_algorithm_params = ConfigFitAlgorithmParams::load_from_toml_value(
-            toml_table
-                .get("fit_algorithm")
-                .expect("load config: `fit_algorithm` not found")
+        let fit_algorithm_params = ConfigFitAlgorithmParams::load_from_parent_toml_value(
+            toml_value
+                // .get("fit_algorithm")
+                // .expect("load config: `fit_algorithm` not found")
         );
         Self {
             deconvolution_function,
@@ -90,7 +108,8 @@ pub struct ConfigDeconvolutionParams {
     pub print_only_better_deconvolution: bool,
 }
 impl Load for ConfigDeconvolutionParams {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "deconvolution_params";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         let try_randomized_initial_values = toml_value
             .get("try_randomized_initial_values")
             .expect("deconvolution_params: `try_randomized_initial_values` not found")
@@ -127,14 +146,15 @@ pub struct ConfigInputParams {
     pub align_step_to: AlignStepsTo,
 }
 impl Load for ConfigInputParams {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
-        let align_step_to = AlignStepsTo::load_from_toml_value(
+    const TOML_NAME: &'static str = "input_params";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+        let align_step_to = AlignStepsTo::load_from_parent_toml_value(
             toml_value
-                .get("align_step_to")
-                .expect("input_params: `align_step_to` not found")
+                // .get("align_step_to")
+                // .expect("input_params: `align_step_to` not found")
         );
         Self {
-            align_step_to
+            align_step_to,
         }
     }
 }
@@ -144,7 +164,8 @@ pub struct ConfigOutputParams {
     pub significant_digits: u8,
 }
 impl Load for ConfigOutputParams {
-    fn load_from_toml_value(toml_value: &TomlValue) -> Self {
+    const TOML_NAME: &'static str = "output_params";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
         let significant_digits = toml_value
             .get("significant_digits")
             .expect("output_params: `significant_digits` not found")
@@ -153,7 +174,7 @@ impl Load for ConfigOutputParams {
         assert!(significant_digits < 20);
         let significant_digits = significant_digits as u8;
         Self {
-            significant_digits
+            significant_digits,
         }
     }
 }
@@ -164,16 +185,28 @@ type ConfigFitAlgorithmParams = FitAlgorithm;
 
 
 #[test]
-fn load_from_text() {
+fn load_from_text_ok() {
     use crate::{
+        deconvolution::types::{
+            InitialValuesGeneric,
+            ValueAndDomain,
+            sat_exp__two_dec_exp__separate_consts::{SatExp_TwoDecExp_SeparateConsts, InitialValues_SatExp_TwoDecExp_SeparateConsts},
+        },
         diff_function::DiffFunction,
         fit_algorithms::pattern_search::PatternSearch,
     };
     let config_expected = Config {
-        deconvolution_function: ConfigDeconvolutionFunc::Two_SatExp_DecExp {
+        deconvolution_function: ConfigDeconvolutionFunc::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts {
             diff_function_type: DiffFunction::DySqr,
-            initial_values: [0.12, 296., 3.96, 6.7, 1.16, 310., 23.2, 1.79],
-        },
+            initial_vads: InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(&vec![
+                ValueAndDomain::free(0.12),
+                ValueAndDomain::fixed(296.),
+                ValueAndDomain::range(3.96, (float::MIN, 10.)),
+                ValueAndDomain::range(6.71, (0., float::MAX)),
+                ValueAndDomain::range(1.16, (0., 2.)),
+                ValueAndDomain::range(310., (0., float::MAX)),
+            ]),
+        }),
         deconvolution_params: ConfigDeconvolutionParams {
             try_randomized_initial_values: 42,
             initial_values_random_scale: 10.,
@@ -197,9 +230,9 @@ fn load_from_text() {
     };
     let config_actual = Config::load_from_text(
 r#"
-[deconvolution_function.Two_SatExp_DecExp]
+[deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
 diff_function_type = "DySqr"
-initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
+initial_values = "b=0.12, c==296, s=3.96<10, ta=6.71>0, 0<tb=1.16<2, tc=310>0"
 
 [deconvolution_params]
 try_randomized_initial_values = 42
@@ -208,7 +241,7 @@ change_sing_probability = 0.05
 print_only_better_deconvolution = true
 
 [input_params]
-align_step_to = "smaller"
+align_steps_to = "smaller"
 
 [output_params]
 significant_digits = 4
@@ -221,36 +254,36 @@ initial_step = 1.0
 alpha = 1.1     # step increase coefficient
 # beta = 0.9    # step decrease coefficient, default = 1/alpha
 "#);
-    dbg!(&config_actual);
     assert_eq!(config_expected, config_actual);
 }
 
-// #[test]
-// fn deconvolution_function() {
-//     todo!()
-// }
+#[should_panic(expected = "deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")]
+#[test]
+fn load_from_text_panic() {
+    Config::load_from_text(
+r#"
+[deconvolution_function.Two_SatExp_DecExp]
+# diff_function_type = "DySqr"
+initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
 
-// #[test]
-// fn deconvolution_params() {
-//     todo!()
-// }
+[deconvolution_params]
+try_randomized_initial_values = 42
+initial_values_random_scale = 10.0
+change_sing_probability = 0.05
+print_only_better_deconvolution = true
 
-// #[test]
-// fn output_params() {
-//     todo!()
-//     // assert_eq!(
-//     //     todo!(),
-//     //     ConfigOutputParams::load_from_text
-//     // )
-// }
+[input_params]
+align_steps_to = "smaller"
 
-// #[test]
-// fn fit_params() {
-//     todo!()
-// }
+[output_params]
+significant_digits = 4
 
-// #[test]
-// fn fit_method_params() {
-//     todo!()
-// }
-
+[fit_algorithm.pattern_search]
+fit_algorithm_min_step = 1e-4
+fit_residue_evals_max = 1_000_000
+fit_residue_max_value = 1e6
+initial_step = 1.0
+alpha = 1.1     # step increase coefficient
+# beta = 0.9    # step decrease coefficient, default = 1/alpha
+"#);
+}

@@ -1,0 +1,182 @@
+//! Two_SatExp_DecExp
+
+use std::collections::HashMap;
+
+use toml::Value as TomlValue;
+
+use crate::{
+    aliases_method_to_function::exp,
+    config::Load,
+    diff_function::DiffFunction,
+    extensions::ToStringWithSignificantDigits,
+    float_type::float,
+    utils_io::format_by_dollar_str,
+};
+
+use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+
+
+/// a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Two_SatExp_DecExp {
+    pub diff_function_type: DiffFunction,
+    pub initial_vads: InitialValues_Two_SatExp_DecExp<ValueAndDomain>,
+}
+
+impl DeconvolutionType for Two_SatExp_DecExp {
+    const NAME: &'static str = "two saturated decaying exponentials";
+
+    const FORMAT_FOR_DESMOS: &'static str = concat!(
+        r"max(0,$a1\left(1-e^{-\frac{x$pm1$s1}{$ta1}}\right)\left(e^{-\frac{x$pm1$s1}{$tb1}}\right))",
+        r"+",
+        r"max(0,$a2\left(1-e^{-\frac{x$pm2$s2}{$ta2}}\right)\left(e^{-\frac{x$pm2$s2}{$tb2}}\right))",
+    );
+    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+
+    fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
+        let values = InitialValues_Two_SatExp_DecExp::from_vec(params);
+        let sd = significant_digits;
+        format_by_dollar_str(
+            format,
+            vec![
+                ("a1", &values.amplitude_1.to_string_with_significant_digits(sd)),
+                ("pm1", if !values.shift_1.is_sign_positive() { "+" } else { "-" }),
+                ("s1", &values.shift_1.abs().to_string_with_significant_digits(sd)),
+                ("ta1", &values.tau_a1.to_string_with_significant_digits(sd)),
+                ("tb1", &values.tau_b1.to_string_with_significant_digits(sd)),
+
+                ("a2", &values.amplitude_2.to_string_with_significant_digits(sd)),
+                ("pm2", if !values.shift_2.is_sign_positive() { "+" } else { "-" }),
+                ("s2", &values.shift_2.abs().to_string_with_significant_digits(sd)),
+                ("ta2", &values.tau_a2.to_string_with_significant_digits(sd)),
+                ("tb2", &values.tau_b2.to_string_with_significant_digits(sd)),
+            ]
+        )
+    }
+}
+
+impl Load for Two_SatExp_DecExp {
+    const TOML_NAME: &'static str = stringify!(Two_SatExp_DecExp);
+
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+        let diff_function_type = DiffFunction::load_from_self_toml_value(
+            toml_value
+                .get("diff_function_type")
+                .expect("deconvolution_function -> Two_SatExp_DecExp: `diff_function_type` not found")
+        );
+        let initial_vads = InitialValues_Two_SatExp_DecExp::load_from_parent_toml_value(toml_value);
+        Two_SatExp_DecExp {
+            diff_function_type,
+            initial_vads,
+        }
+    }
+}
+
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InitialValues_Two_SatExp_DecExp<T> {
+    amplitude_1: T,
+    shift_1: T,
+    tau_a1: T,
+    tau_b1: T,
+    amplitude_2: T,
+    shift_2: T,
+    tau_a2: T,
+    tau_b2: T,
+}
+
+impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
+    fn from_vec(params: &Vec<T>) -> Self {
+        match params[..] {
+            [
+                amplitude_1, shift_1, tau_a1, tau_b1,
+                amplitude_2, shift_2, tau_a2, tau_b2,
+            ] => InitialValues_Two_SatExp_DecExp::<T> {
+                amplitude_1, shift_1, tau_a1, tau_b1,
+                amplitude_2, shift_2, tau_a2, tau_b2,
+            },
+            _ => unreachable!()
+        }
+    }
+
+    fn to_vec(&self) -> Vec<T> {
+        todo!()
+    }
+
+    fn len_stat() -> usize {
+        8
+    }
+
+    fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
+        todo!();
+        // let Self { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = Self::from_vec(params);
+        // let mut points = Vec::<float>::with_capacity(points_len);
+        // for i in 0..points_len {
+        //     let x: float = i_to_x(i, points_len, x_start_end);
+        //     let x_m_shift_1: float = x - shift_1;
+        //     let x_m_shift_2: float = x - shift_2;
+        //     let y1 = amplitude_1 * (1. - exp(-(x_m_shift_1)/tau_a1)) * exp(-(x_m_shift_1)/tau_b1);
+        //     let y2 = amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2);
+        //     points.push(y1.max(0.) + y2.max(0.));
+        // }
+        // points
+    }
+}
+
+impl InitialValuesVAD for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {
+    fn is_params_ok(&self, params: &Vec<float>) -> bool {
+        // let (amplitude_1, shift_1, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
+        // let (amplitude_2, shift_2, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
+        // amplitude_1 >= 0. && tau_a1 >= 0. && tau_b1 >= 0. &&
+        // shift_1 < shift_2 &&
+        // amplitude_2 >= 0. && tau_a2 >= 0. && tau_b2 >= 0.
+        todo!()
+    }
+}
+
+impl From<InitialValues_Two_SatExp_DecExp<ValueAndDomain>> for InitialValues_Two_SatExp_DecExp<float> {
+    fn from(value: InitialValues_Two_SatExp_DecExp<ValueAndDomain>) -> Self {
+        Self::from_vec(&value.to_vec().iter().map(|v| v.value).collect())
+    }
+}
+
+
+impl Load for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {
+    const TOML_NAME: &'static str = "initial_values";
+    fn load_from_self_toml_value(toml_value: &TomlValue) -> Self {
+        let str = toml_value
+            .as_str()
+            .expect("InitialValues_Two_SatExp_DecExp -> can't parse as string");
+        let parts: HashMap<String, ValueAndDomain> = str
+            .trim_matches(|c: char| c.is_whitespace() || c == ',')
+            .split(',')
+            .map(|part| part.trim())
+            .map(ValueAndDomain::load_from_str)
+            .collect();
+        // Self {
+        //     amplitude_1: parts.get("a1").expect(),
+        //     shift_1: parts.get("s1").expect(),
+        //     tau_a1: parts.get("ta1").expect(),
+        //     tau_b1: T,
+        // }
+        // let initial_vads = toml_value
+        //     .get("initial_values")
+        //     .expect("deconvolution_function -> Two_SatExp_DecExp: `initial_values` not found")
+        //     .as_array()
+        //     .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: can't parse as list")
+        //     .iter()
+        //     .enumerate()
+        //     .map(|(i, initial_value)| {
+        //         initial_value
+        //             .as_float()
+        //             .expect(&format!("deconvolution_function -> Two_SatExp_DecExp -> initial_values[{i}]: can't parse as float"))
+        //     })
+        //     .collect::<Vec<_>>()//[..8]
+        //     .try_into()
+        //     .expect("deconvolution_function -> Two_SatExp_DecExp -> initial_values: len != 8");
+        todo!()
+    }
+}
+
