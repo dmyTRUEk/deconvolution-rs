@@ -115,6 +115,10 @@ impl InitialValuesVAD for InitialValues_Exponents<ValueAndDomain> {
             amplitude >= 0.
         })
     }
+
+    fn randomize(&mut self, initial_values_random_scale: float) {
+        todo!()
+    }
 }
 
 impl From<InitialValues_Exponents<ValueAndDomain>> for InitialValues_Exponents<float> {

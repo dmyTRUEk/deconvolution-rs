@@ -83,20 +83,21 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp<T> {
     }
 
     fn to_vec(&self) -> Vec<T> {
-        todo!()
+        let Self { amplitude, shift, tau_a, tau_b, tau_c } = *self;
+        vec![amplitude, shift, tau_a, tau_b, tau_c]
     }
 
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
-        todo!();
-        // let Self { amplitude, shift, tau_a, tau_b, tau_c } = Self::from_vec(params);
-        // let mut points = Vec::<float>::with_capacity(points_len);
-        // for i in 0..points_len {
-        //     let x: float = i_to_x(i, points_len, x_start_end);
-        //     let x_m_shift: float = x - shift;
-        //     let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c));
-        //     points.push(y.max(0.));
-        // }
-        // points
+        type SelfF = InitialValues_SatExp_TwoDecExp<float>;
+        let SelfF { amplitude, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
+        let mut points = Vec::<float>::with_capacity(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift: float = x - shift;
+            let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c));
+            points.push(y.max(0.));
+        }
+        points
     }
 }
 

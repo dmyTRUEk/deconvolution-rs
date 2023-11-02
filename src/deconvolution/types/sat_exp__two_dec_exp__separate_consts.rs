@@ -90,7 +90,8 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_Separat
     }
 
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
-        let InitialValues_SatExp_TwoDecExp_SeparateConsts { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(params);
+        type SelfF = InitialValues_SatExp_TwoDecExp_SeparateConsts<float>;
+        let SelfF { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);

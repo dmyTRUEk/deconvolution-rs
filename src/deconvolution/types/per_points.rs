@@ -80,7 +80,11 @@ impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoi
     }
 }
 
-impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {}
+impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {
+    fn randomize(&mut self, initial_values_random_scale: float) {
+        todo!()
+    }
+}
 
 
 impl Load for InitialValues_PerPoint<ValueAndDomain> {

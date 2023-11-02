@@ -27,12 +27,17 @@ use crate::{
 pub(super) trait DeconvolutionType {
     /// Human readable name, used for output file.
     const NAME: &'static str;
+
     const FORMAT_FOR_DESMOS: &'static str;
+
     const FORMAT_FOR_ORIGIN: &'static str;
+
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String;
+
     fn to_desmos_function(&self, params: &Vec<float>, significant_digits: u8) -> String {
         self.to_plottable_function(params, significant_digits, Self::FORMAT_FOR_DESMOS)
     }
+
     fn to_origin_function(&self, params: &Vec<float>, significant_digits: u8) -> String {
         self.to_plottable_function(params, significant_digits, Self::FORMAT_FOR_ORIGIN)
     }
