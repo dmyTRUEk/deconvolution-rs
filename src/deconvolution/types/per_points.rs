@@ -47,6 +47,7 @@ impl Load for PerPoint {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialValues_PerPoint<T> {
+    // TODO: remove `pub`?
     pub len: usize,
     pub vad: T,
 }
@@ -58,11 +59,9 @@ impl<T> InitialValues_PerPoint<T> {
 }
 
 impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoint<T> {
-    fn len_stat() -> usize {
-        unreachable!()
-    }
+    const LEN: usize = unreachable!();
 
-    fn len_dyn(&self) -> usize {
+    fn len(&self) -> usize {
         self.len
     }
 
@@ -72,7 +71,7 @@ impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoi
     }
 
     fn to_vec(&self) -> Vec<T> {
-        vec![self.vad; self.len_dyn()]
+        vec![self.vad; self.len()]
     }
 
     fn params_to_points(&self, params: &Vec<float>, _points_len: usize, _x_start_end: (float, float)) -> Vec<float> {

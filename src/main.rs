@@ -1,6 +1,7 @@
 //! Main file of deconvolution-rs.
 
 #![feature(
+    array_chunks,
     array_windows,
     trait_alias,
 )]

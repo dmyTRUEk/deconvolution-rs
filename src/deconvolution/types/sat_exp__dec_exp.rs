@@ -60,17 +60,16 @@ impl Load for SatExp_DecExp {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialValues_SatExp_DecExp<T> {
-    // amplitude: T,
-    shift: T,
-    tau_a: T,
-    tau_b: T,
-}
-
-impl<T> InitialValues_SatExp_DecExp<T> {
-    const LEN: usize = 3;
+    // TODO: remove `pub`?
+    // pub amplitude: T,
+    pub shift: T,
+    pub tau_a: T,
+    pub tau_b: T,
 }
 
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExp<T> {
+    const LEN: usize = 3;
+
     fn from_vec(params: &Vec<T>) -> Self {
         match params[..] {
             [shift, tau_a, tau_b] => Self { shift, tau_a, tau_b },
@@ -81,10 +80,6 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExp<T> {
     fn to_vec(&self) -> Vec<T> {
         let Self { shift, tau_a, tau_b } = *self;
         vec![shift, tau_a, tau_b]
-    }
-
-    fn len_stat() -> usize {
-        Self::LEN
     }
 
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {

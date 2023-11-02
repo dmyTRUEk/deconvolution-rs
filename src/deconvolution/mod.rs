@@ -25,6 +25,7 @@ use self::types::{
     sat_exp__dec_exp::{InitialValues_SatExp_DecExp, SatExp_DecExp},
     sat_exp__dec_exp_plus_const::{InitialValues_SatExp_DecExpPlusConst, SatExp_DecExpPlusConst},
     sat_exp__two_dec_exp::{InitialValues_SatExp_TwoDecExp, SatExp_TwoDecExp},
+    sat_exp__two_dec_exp__constrained_consts::{InitialValues_SatExp_TwoDecExp_ConstrainedConsts, SatExp_TwoDecExp_ConstrainedConsts},
     sat_exp__two_dec_exp__separate_consts::{InitialValues_SatExp_TwoDecExp_SeparateConsts, SatExp_TwoDecExp_SeparateConsts},
     sat_exp__two_dec_exp_plus_const::{InitialValues_SatExp_TwoDecExpPlusConst, SatExp_TwoDecExpPlusConst},
     two__sat_exp__dec_exp::{InitialValues_Two_SatExp_DecExp, Two_SatExp_DecExp},
@@ -43,6 +44,7 @@ pub enum Deconvolution {
     SatExp_DecExpPlusConst(SatExp_DecExpPlusConst),
     SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst),
     SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts),
+    SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts),
     // Fourier { unimplemented },
 }
 
@@ -57,19 +59,21 @@ impl<'a> Deconvolution {
             Self::SatExp_DecExpPlusConst(_) => SatExp_DecExpPlusConst::NAME,
             Self::SatExp_TwoDecExpPlusConst(_) => SatExp_TwoDecExpPlusConst::NAME,
             Self::SatExp_TwoDecExp_SeparateConsts(_) => SatExp_TwoDecExp_SeparateConsts::NAME,
+            Self::SatExp_TwoDecExp_ConstrainedConsts(_) => SatExp_TwoDecExp_ConstrainedConsts::NAME,
         }
     }
 
     pub fn get_initial_values_len(&self) -> usize {
         match self {
-            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.len_dyn(),
-            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.len_dyn(),
-            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.len_dyn(),
+            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.len(),
+            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.len(),
+            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.len(),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.len(),
         }
     }
 
@@ -83,6 +87,7 @@ impl<'a> Deconvolution {
             Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => InitialValues_SatExp_DecExpPlusConst::<float>::from(*initial_vads).to_vec(),
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => InitialValues_SatExp_TwoDecExpPlusConst::<float>::from(*initial_vads).to_vec(),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => InitialValues_SatExp_TwoDecExp_SeparateConsts::<float>::from(*initial_vads).to_vec(),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => InitialValues_SatExp_TwoDecExp_ConstrainedConsts::<float>::from(*initial_vads).to_vec(),
         }
     }
 
@@ -96,6 +101,7 @@ impl<'a> Deconvolution {
             Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
         }
     }
 
@@ -117,6 +123,7 @@ impl<'a> Deconvolution {
             Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts{ initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
         }
     }
 
@@ -132,6 +139,7 @@ impl<'a> Deconvolution {
             | Deconvolution::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
             | Deconvolution::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
             | Deconvolution::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
+            | Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
             => {
                 diff_function_type.calc_diff(points_measured, points_convolved)
             }
@@ -148,21 +156,23 @@ impl<'a> Deconvolution {
             Deconvolution::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
             Deconvolution::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
             Deconvolution::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
+            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
         }
     }
 
-    // TODO: tests, check if they are work in desmos
+    // TODO: tests, check if they work in desmos
     pub fn to_desmos_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
         Ok(format!("y=") + &match self {
             Deconvolution::PerPoint(_) => { return Err("not plottable") },
-            Deconvolution::Exponents(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::SatExp_DecExp(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::SatExp_TwoDecExp(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::Two_SatExp_DecExp(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::SatExp_DecExpPlusConst(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::SatExp_TwoDecExpPlusConst(self_) => self_.to_desmos_function(params, significant_digits),
-            Deconvolution::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_desmos_function(params, significant_digits),
+            Deconvolution::Exponents(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::Two_SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_DecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_TwoDecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_desmos_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
         })
     }
 }
@@ -171,7 +181,7 @@ impl<'a> Deconvolution {
 impl Load for Deconvolution {
     const TOML_NAME: &'static str = "deconvolution_function";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 8] = [
+        const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 9] = [
             PerPoint::TOML_NAME,
             Exponents::TOML_NAME,
             SatExp_DecExp::TOML_NAME,
@@ -180,6 +190,7 @@ impl Load for Deconvolution {
             SatExp_DecExpPlusConst::TOML_NAME,
             SatExp_TwoDecExpPlusConst::TOML_NAME,
             SatExp_TwoDecExp_SeparateConsts::TOML_NAME,
+            SatExp_TwoDecExp_ConstrainedConsts::TOML_NAME,
         ];
         let deconvolution_functions = DECONVOLUTION_FUNCTIONS_NAMES
             .map(|df_name| toml_value.get(df_name));
@@ -216,6 +227,7 @@ impl Load for Deconvolution {
             5 => Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             6 => Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             7 => Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            8 => Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }

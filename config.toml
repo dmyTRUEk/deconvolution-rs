@@ -43,9 +43,14 @@
 # initial_values = "a=0.1, s=-5.0, h=1e-2, ta=0.1, tb=10.0, tc=20.0"
 
 # y = (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
-[deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
+# [deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
+# diff_function_type = "DySqr"
+# initial_values = "b=9, c==5, s=-1<10, ta=70>0, 0 < tb = 10 < 100, tc=7"
+
+# y = (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
+[deconvolution_function.SatExp_TwoDecExp_ConstrainedConsts]
 diff_function_type = "DySqr"
-initial_values = "b=9, c==5, s=-1<10, ta=70>0, 0 < tb = 10 < 100, tc=7"
+initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"
 
 
 [deconvolution_params]
@@ -72,7 +77,7 @@ significant_digits = 4
 # fit_algorithm_min_step = 1e-4
 # fit_residue_evals_max = 1_000_000
 # fit_residue_max_value = 1e6
-# initial_step = 1.0
+# initial_step = 0.1
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
 
@@ -80,14 +85,7 @@ significant_digits = 4
 fit_algorithm_min_step = 1e-4
 fit_residue_evals_max = 1_000_000
 fit_residue_max_value = 1e6
-initial_step = 1.0
+initial_step = 0.1
 alpha = 1.1     # step increase coefficient
 # beta = 0.9    # step decrease coefficient, default = 1/alpha
-
-# [fit_algorithm.downhill_simplex]
-# fit_algorithm_min_step = 1e-4
-# fit_residue_evals_max = 1_000_000
-# fit_residue_max_value = 1e6
-# initial_simplex_scale = 0.8
-# params_diff_type = "DySqr"
 

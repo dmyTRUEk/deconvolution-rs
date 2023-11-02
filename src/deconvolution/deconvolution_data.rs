@@ -8,12 +8,23 @@ use crate::{
     fit_algorithms::{Fit, FitAlgorithm, FitResult},
     float_type::float,
     load::Load,
-    spectrum::Spectrum, stacktrace::Stacktrace,
+    spectrum::Spectrum,
+    stacktrace::Stacktrace,
 };
 
 use super::{
     Deconvolution,
     convolution::convolve_by_points,
+    types::{
+        InitialValuesGeneric,
+        sat_exp__dec_exp::InitialValues_SatExp_DecExp,
+        sat_exp__dec_exp_plus_const::InitialValues_SatExp_DecExpPlusConst,
+        sat_exp__two_dec_exp::InitialValues_SatExp_TwoDecExp,
+        sat_exp__two_dec_exp__constrained_consts::InitialValues_SatExp_TwoDecExp_ConstrainedConsts,
+        sat_exp__two_dec_exp__separate_consts::InitialValues_SatExp_TwoDecExp_SeparateConsts,
+        sat_exp__two_dec_exp_plus_const::InitialValues_SatExp_TwoDecExpPlusConst,
+        two__sat_exp__dec_exp::InitialValues_Two_SatExp_DecExp,
+    },
 };
 
 
@@ -148,13 +159,11 @@ impl DeconvolutionData {
                     x_start: self.measured.x_start,
                 };
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                drop(file_output);
                 sd_deconvolved.write_to_file(filepathstr_output);
             }
             self_ @ Deconvolution::Exponents { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                for parts in deconvolution_results.params.chunks(3) {
-                    let (amplitude, shift, tau) = (parts[0], parts[1], parts[2]);
+                for [amplitude, shift, tau] in deconvolution_results.params.array_chunks() {
                     writeln!(file_output, "amplitude={amplitude}").unwrap();
                     writeln!(file_output, "shift={shift}").unwrap();
                     writeln!(file_output, "tau={tau}").unwrap();
@@ -165,8 +174,8 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::SatExp_DecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                // let (amplitude, shift, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
-                let (shift, tau_a, tau_b) = (params[0], params[1], params[2]);
+                type SelfF = InitialValues_SatExp_DecExp<float>;
+                let SelfF { shift, tau_a, tau_b } = SelfF::from_vec(params);
                 // writeln!(file_output, "amplitude={amplitude}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "tau_a={tau_a}").unwrap();
@@ -177,8 +186,8 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::Two_SatExp_DecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                let (amplitude_1, shift_1, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
-                let (amplitude_2, shift_2, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
+                type SelfF = InitialValues_Two_SatExp_DecExp<float>;
+                let SelfF { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = SelfF::from_vec(params);
                 writeln!(file_output, "amplitude_1={amplitude_1}").unwrap();
                 writeln!(file_output, "shift_1={shift_1}").unwrap();
                 writeln!(file_output, "tau_a1={tau_a1}").unwrap();
@@ -193,7 +202,8 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::SatExp_DecExpPlusConst { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                let (amplitude, shift, height, tau_a, tau_b) = (params[0], params[1], params[2], params[3], params[4]);
+                type SelfF = InitialValues_SatExp_DecExpPlusConst<float>;
+                let SelfF { amplitude, shift, height, tau_a, tau_b } = SelfF::from_vec(params);
                 writeln!(file_output, "amplitude={amplitude}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "height={height}").unwrap();
@@ -205,7 +215,8 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::SatExp_TwoDecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                let (amplitude, shift, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4]);
+                type SelfF = InitialValues_SatExp_TwoDecExp<float>;
+                let SelfF { amplitude, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
                 writeln!(file_output, "amplitude={amplitude}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "tau_a={tau_a}").unwrap();
@@ -217,7 +228,8 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::SatExp_TwoDecExpPlusConst { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                let (amplitude, shift, height, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4], params[5]);
+                type SelfF = InitialValues_SatExp_TwoDecExpPlusConst<float>;
+                let SelfF { amplitude, shift, height, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
                 writeln!(file_output, "amplitude={amplitude}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "height={height}").unwrap();
@@ -230,9 +242,24 @@ impl DeconvolutionData {
             }
             self_ @ Deconvolution::SatExp_TwoDecExp_SeparateConsts { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
-                let (amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4], params[5]);
+                type SelfF = InitialValues_SatExp_TwoDecExp_SeparateConsts<float>;
+                let SelfF { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
                 writeln!(file_output, "amplitude_b={amplitude_b}").unwrap();
                 writeln!(file_output, "amplitude_c={amplitude_c}").unwrap();
+                writeln!(file_output, "shift={shift}").unwrap();
+                writeln!(file_output, "tau_a={tau_a}").unwrap();
+                writeln!(file_output, "tau_b={tau_b}").unwrap();
+                writeln!(file_output, "tau_c={tau_c}").unwrap();
+                if let Ok(desmos_function_str) = desmos_function_str {
+                    writeln!(file_output, "{desmos_function_str}").unwrap();
+                }
+            }
+            self_ @ Deconvolution::SatExp_TwoDecExp_ConstrainedConsts { .. } => {
+                writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
+                type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
+                let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
+                writeln!(file_output, "amplitude_a={amplitude_a}").unwrap();
+                writeln!(file_output, "amplitude_b={amplitude_b}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "tau_a={tau_a}").unwrap();
                 writeln!(file_output, "tau_b={tau_b}").unwrap();

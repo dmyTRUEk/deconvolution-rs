@@ -80,17 +80,16 @@ impl Load for AllowTbLessThanTa {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialValues_SatExp_DecExpPlusConst<T> {
-    amplitude: T, // or disable it?
-    shift: T,
-    height: T,
-    tau_a: T,
-    tau_b: T,
+    // TODO: remove `pub`?
+    pub amplitude: T, // or disable it?
+    pub shift: T,
+    pub height: T,
+    pub tau_a: T,
+    pub tau_b: T,
 }
 
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExpPlusConst<T> {
-    fn len_stat() -> usize {
-        5
-    }
+    const LEN: usize = 5;
 
     fn from_vec(params: &Vec<T>) -> Self {
         match params[..] {

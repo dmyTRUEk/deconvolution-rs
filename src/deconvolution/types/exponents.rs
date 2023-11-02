@@ -68,15 +68,14 @@ impl Load for Exponents {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct InitialValues_Exponents<T> (
+    // TODO: Vec<(T, T, T)>
     Vec<T>
 );
 
 impl<T> InitialValuesGeneric<T> for InitialValues_Exponents<T> {
-    fn len_stat() -> usize {
-        unreachable!()
-    }
+    const LEN: usize = unreachable!();
 
-    fn len_dyn(&self) -> usize {
+    fn len(&self) -> usize {
         self.0.len()
     }
 

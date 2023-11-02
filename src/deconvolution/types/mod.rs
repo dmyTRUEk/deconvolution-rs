@@ -9,6 +9,8 @@ pub mod sat_exp__dec_exp_plus_const;
 #[allow(non_snake_case)]
 pub mod sat_exp__two_dec_exp;
 #[allow(non_snake_case)]
+pub mod sat_exp__two_dec_exp__constrained_consts;
+#[allow(non_snake_case)]
 pub mod sat_exp__two_dec_exp__separate_consts;
 #[allow(non_snake_case)]
 pub mod sat_exp__two_dec_exp_plus_const;
@@ -208,11 +210,11 @@ pub trait InitialValuesGeneric<T> {
     // fn from_array<const N: usize>(params: [T; N]) -> Self;
 
     /// Number of initial values (don't depend on `self` => static)
-    fn len_stat() -> usize;
+    const LEN: usize;
 
     /// Number of initial values (depends on `self` => dynamic)
-    fn len_dyn(&self) -> usize {
-        Self::len_stat()
+    fn len(&self) -> usize {
+        Self::LEN
     }
 
     /// Convert params to points

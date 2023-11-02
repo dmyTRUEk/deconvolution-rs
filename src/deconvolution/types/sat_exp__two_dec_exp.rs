@@ -63,17 +63,16 @@ impl Load for SatExp_TwoDecExp {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialValues_SatExp_TwoDecExp<T> {
-    amplitude: T,
-    shift: T,
-    tau_a: T,
-    tau_b: T,
-    tau_c: T,
+    // TODO: remove `pub`?
+    pub amplitude: T,
+    pub shift: T,
+    pub tau_a: T,
+    pub tau_b: T,
+    pub tau_c: T,
 }
 
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp<T> {
-    fn len_stat() -> usize {
-        5
-    }
+    const LEN: usize = 5;
 
     fn from_vec(params: &Vec<T>) -> Self {
         match params[..] {
