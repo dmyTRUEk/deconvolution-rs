@@ -175,8 +175,8 @@ impl DeconvolutionData {
             self_ @ Deconvolution::SatExp_DecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
                 type SelfF = InitialValues_SatExp_DecExp<float>;
-                let SelfF { shift, tau_a, tau_b } = SelfF::from_vec(params);
-                // writeln!(file_output, "amplitude={amplitude}").unwrap();
+                let SelfF { amplitude, shift, tau_a, tau_b } = SelfF::from_vec(params);
+                writeln!(file_output, "amplitude={amplitude}").unwrap();
                 writeln!(file_output, "shift={shift}").unwrap();
                 writeln!(file_output, "tau_a={tau_a}").unwrap();
                 writeln!(file_output, "tau_b={tau_b}").unwrap();

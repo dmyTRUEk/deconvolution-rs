@@ -16,7 +16,7 @@
 # y = a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
 # [deconvolution_function.SatExp_DecExp]
 # diff_function_type = "DySqr"
-# initial_values = "s=299.0, ta=62.6, tb=6.92"
+# initial_values = "a=1, s=299, ta=62.6, tb=6.92"
 
 # y = a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
 # [deconvolution_function.Two_SatExp_DecExp]
@@ -47,7 +47,7 @@
 # diff_function_type = "DySqr"
 # initial_values = "b=9, c==5, s=-1<10, ta=70>0, 0 < tb = 10 < 100, tc=7"
 
-# y = (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
+# y = a * (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
 [deconvolution_function.SatExp_TwoDecExp_ConstrainedConsts]
 diff_function_type = "DySqr"
 initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"

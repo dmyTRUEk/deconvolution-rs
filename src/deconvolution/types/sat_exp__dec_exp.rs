@@ -28,7 +28,7 @@ pub struct SatExp_DecExp {
 impl DeconvolutionType for SatExp_DecExp {
     const NAME: &'static str = "saturated decaying exponential";
 
-    const FORMAT_FOR_DESMOS: &'static str = r"max(0,\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}\right))";
+    const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}\right))";
     const FORMAT_FOR_ORIGIN: &'static str = todo!();
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
@@ -37,6 +37,7 @@ impl DeconvolutionType for SatExp_DecExp {
         format_by_dollar_str(
             format,
             vec![
+                ("a", &params.amplitude.to_string_with_significant_digits(sd)),
                 ("pm", if !params.shift.is_sign_positive() { "+" } else { "-" }),
                 ("s", &params.shift.abs().to_string_with_significant_digits(sd)),
                 ("ta", &params.tau_a.to_string_with_significant_digits(sd)),
@@ -61,35 +62,35 @@ impl Load for SatExp_DecExp {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialValues_SatExp_DecExp<T> {
     // TODO: remove `pub`?
-    // pub amplitude: T,
+    pub amplitude: T,
     pub shift: T,
     pub tau_a: T,
     pub tau_b: T,
 }
 
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExp<T> {
-    const LEN: usize = 3;
+    const LEN: usize = 4;
 
     fn from_vec(params: &Vec<T>) -> Self {
         match params[..] {
-            [shift, tau_a, tau_b] => Self { shift, tau_a, tau_b },
+            [amplitude, shift, tau_a, tau_b] => Self { amplitude, shift, tau_a, tau_b },
             _ => unreachable!()
         }
     }
 
     fn to_vec(&self) -> Vec<T> {
-        let Self { shift, tau_a, tau_b } = *self;
-        vec![shift, tau_a, tau_b]
+        let Self { amplitude, shift, tau_a, tau_b } = *self;
+        vec![amplitude, shift, tau_a, tau_b]
     }
 
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
         type SelfF = InitialValues_SatExp_DecExp<float>;
-        let SelfF { shift, tau_a, tau_b } = SelfF::from_vec(params);
+        let SelfF { amplitude, shift, tau_a, tau_b } = SelfF::from_vec(params);
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
             let x_m_shift: float = x - shift;
-            let y = (1. - exp(-x_m_shift/tau_a)) * exp(-x_m_shift/tau_b);
+            let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * exp(-x_m_shift/tau_b);
             points.push(y.max(0.));
         }
         points
@@ -122,7 +123,7 @@ impl Load for InitialValues_SatExp_DecExp<ValueAndDomain> {
                 .unwrap_or_else(|| stacktrace.pushed(name).panic_not_found())
         };
         Self {
-            // amplitude: try_get("a"),
+            amplitude: try_get("a"),
             shift: try_get("s"),
             tau_a: try_get("ta"),
             tau_b: try_get("tb"),
