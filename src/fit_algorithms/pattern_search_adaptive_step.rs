@@ -12,7 +12,7 @@ use crate::{
     utils_io::press_enter_to_continue,
 };
 
-use super::fit_algorithm::{Fit, FitResult};
+use super::{Fit, FitResult};
 
 
 #[derive(Debug, Clone, PartialEq)]

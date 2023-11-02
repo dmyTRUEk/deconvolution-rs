@@ -5,7 +5,7 @@ use std::{cmp::Ordering, fs::File, io::Write};
 use toml::Value as TomlValue;
 
 use crate::{
-    fit_algorithms::fit_algorithm::{Fit, FitAlgorithm, FitResult},
+    fit_algorithms::{Fit, FitAlgorithm, FitResult},
     float_type::float,
     load::Load,
     spectrum::Spectrum, stacktrace::Stacktrace,
@@ -262,7 +262,7 @@ impl Load for AlignStepsTo {
         match align_steps_to_str {
             "bigger"  => AlignStepsTo::Bigger,
             "smaller" => AlignStepsTo::Smaller,
-            _ => stacktrace.panic("unknown type, known types: [`bigger`, `smaller`]")
+            _ => stacktrace.panic_unknown_type(align_steps_to_str, ["bigger", "smaller"])
         }
     }
 }

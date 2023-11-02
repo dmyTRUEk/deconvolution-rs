@@ -30,7 +30,7 @@ mod utils_io;
 use config::Config;
 use deconvolution::deconvolution_data::DeconvolutionData;
 use extensions::ToStringUnderscoreSeparated; // TODO: use
-use fit_algorithms::fit_algorithm::Fit;
+use fit_algorithms::Fit;
 use float_type::float;
 use spectrum::Spectrum;
 use utils_io::flush;

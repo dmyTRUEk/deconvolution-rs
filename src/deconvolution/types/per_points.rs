@@ -10,7 +10,7 @@ use crate::{
     stacktrace::Stacktrace,
 };
 
-use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
 
 
 /// [y0, y1, y2, …]
@@ -81,12 +81,6 @@ impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoi
 }
 
 impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {}
-
-// impl From<InitialValues_PerPoint<ValueAndDomain>> for InitialValues_PerPoint<float> {
-//     fn from(value: InitialValues_PerPoint<ValueAndDomain>) -> Self {
-//         Self::from_vec(&value.to_vec().iter().map(|v| v.value).collect())
-//     }
-// }
 
 
 impl Load for InitialValues_PerPoint<ValueAndDomain> {

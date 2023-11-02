@@ -45,7 +45,7 @@
 # y = (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
 [deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
 diff_function_type = "DySqr"
-initial_values = "b=4.5, c==5, s=120<160, ta=100>0, 0 < tb = 6 < 10, tc=7"
+initial_values = "b=9, c==5, s=-1<10, ta=70>0, 0 < tb = 10 < 100, tc=7"
 
 
 [deconvolution_params]

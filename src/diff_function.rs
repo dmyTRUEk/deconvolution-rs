@@ -79,11 +79,12 @@ impl FromStr for DiffFunction {
 impl Load for DiffFunction {
     const TOML_NAME: &'static str = "diff_function_type";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        DiffFunction::from_str(
-            toml_value
-                .as_str()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"))
-        ).unwrap_or_else(|_| stacktrace.panic("unknown type"))
+        let diff_function_str: &str = toml_value
+            .as_str()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("string"));
+        const KNOWN_TYPES: [&str; 10] = ["DySqr", "dy_sqr", "DyAbs", "dy_abs", "DySqrPerEl", "dy_sqr_per_el", "DyAbsPerEl", "dy_abs_per_el", "LeastDist", "least_dist"];
+        DiffFunction::from_str(diff_function_str)
+            .unwrap_or_else(|_| stacktrace.panic_unknown_type(diff_function_str, KNOWN_TYPES))
     }
 }
 

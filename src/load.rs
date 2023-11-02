@@ -16,7 +16,7 @@ pub trait Load {
         Self::load_from_self(
             toml_value
                 .get(Self::TOML_NAME)
-                .unwrap_or_else(|| stacktrace.panic("not found")),
+                .unwrap_or_else(|| stacktrace.panic_not_found()),
             &stacktrace
         )
     }
@@ -39,7 +39,7 @@ pub trait Load {
             toml_value
                 .get(Self::TOML_NAME)
                 // `stacktrace` isn't updated, bc it was updated before, in `*_handle_stacktrace`
-                .unwrap_or_else(|| stacktrace.panic("not found")),
+                .unwrap_or_else(|| stacktrace.panic_not_found()),
             stacktrace
         )
     }

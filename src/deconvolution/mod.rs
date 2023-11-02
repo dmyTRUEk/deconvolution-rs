@@ -185,12 +185,20 @@ impl Load for Deconvolution {
             .map(|df_name| toml_value.get(df_name));
         let deconvolution_functions_number = deconvolution_functions
             .iter()
-            .filter(|df| df.is_some())
+            .flatten() // flatten on Iter<Option/Result> gives only Some/Ok variants and unwraps them
             .count();
         match deconvolution_functions_number.cmp(&1) {
-            Ordering::Less    => stacktrace.panic(&format!("no known `{}.<name>` found", Self::TOML_NAME)),
-            Ordering::Greater => stacktrace.panic(&format!("too many `{}.<name>` found", Self::TOML_NAME)),
-            Ordering::Equal   => {}
+            // TODO: maybe somehow get first entry from table and use `panic_unknown_type` with value
+            Ordering::Less    => stacktrace.panic_unknown_type_without_value(DECONVOLUTION_FUNCTIONS_NAMES),
+            Ordering::Greater => stacktrace.panic_more_than_one_found(
+                deconvolution_functions
+                    .iter()
+                    .zip(DECONVOLUTION_FUNCTIONS_NAMES)
+                    .map(|(odf, dfn)| odf.map(|_| dfn))
+                    .flatten()
+                    .collect::<Vec<_>>()
+            ),
+            Ordering::Equal => {}
         }
         let deconvolution_function_index = deconvolution_functions
             .iter()
@@ -198,6 +206,7 @@ impl Load for Deconvolution {
             .unwrap();
         let toml_value = deconvolution_functions[deconvolution_function_index].unwrap();
         // TODO(refactor): dont use numbers, bc they must be kept in sync with `DECONVOLUTION_FUNCTIONS_NAMES`
+        // - maybe create vec of [PerPoint, Exponents, ...] and try load by them?
         match deconvolution_function_index {
             0 => Self::PerPoint(PerPoint::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             1 => Self::Exponents(Exponents::load_from_self_handle_stacktrace(toml_value, stacktrace)),

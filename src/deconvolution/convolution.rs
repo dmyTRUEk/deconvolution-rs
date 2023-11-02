@@ -613,7 +613,7 @@ mod deconvolve {
                 },
             },
             diff_function::DiffFunction,
-            fit_algorithms::{fit_algorithm::FitAlgorithm, pattern_search::PatternSearch},
+            fit_algorithms::{FitAlgorithm, pattern_search::PatternSearch},
             float,
         };
         use super::super::super::deconvolution_data::DeconvolutionResultOrError;

@@ -8,7 +8,7 @@ use toml::{
 };
 
 use crate::{
-    fit_algorithms::fit_algorithm::FitAlgorithm,
+    fit_algorithms::FitAlgorithm,
     float_type::float,
     load::Load,
     stacktrace::Stacktrace,
@@ -164,10 +164,10 @@ fn load_from_text_ok() {
             initial_vads: InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(&vec![
                 ValueAndDomain::free(0.12),
                 ValueAndDomain::fixed(296.),
-                ValueAndDomain::range(3.96, (float::MIN, 10.)),
-                ValueAndDomain::range(6.71, (0., float::MAX)),
-                ValueAndDomain::range(1.16, (0., 2.)),
-                ValueAndDomain::range(310., (0., float::MAX)),
+                ValueAndDomain::range_with_max(3.96, 10.),
+                ValueAndDomain::range_with_min(6.71, 0.),
+                ValueAndDomain::range_closed(1.16, (0., 2.)),
+                ValueAndDomain::range_with_min(310., 0.),
             ]),
         }),
         deconvolution_params: ConfigDeconvolutionParams {
@@ -217,6 +217,7 @@ initial_step = 1.0
 alpha = 1.1     # step increase coefficient
 # beta = 0.9    # step decrease coefficient, default = 1/alpha
 "#);
+    dbg!(&config_expected, &config_actual);
     assert_eq!(config_expected, config_actual);
 }
 

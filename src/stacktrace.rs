@@ -51,5 +51,33 @@ impl Stacktrace {
     pub fn panic_cant_parse_as(&self, type_: &str) -> ! {
         self.panic(&format!("can't parse as {type_}"))
     }
+
+    pub fn panic_unknown_type_without_value<const N: usize>(&self, known_types_arr: [&str; N]) -> ! {
+        let known_types_str = known_types_arr
+            .iter()
+            .map(|t| format!("`{t}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        self.panic(&format!("unkown type, known types: [{known_types_str}]"))
+    }
+
+    pub fn panic_unknown_type<const N: usize>(&self, value: &str, known_types_arr: [&str; N]) -> ! {
+        let known_types_str = known_types_arr
+            .iter()
+            .map(|t| format!("`{t}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        self.panic(&format!("unkown type: `{value}`, known types: [{known_types_str}]"))
+    }
+
+    pub fn panic_more_than_one_found(&self, found_values_vec: Vec<&str>) -> ! {
+        let found_values_str = found_values_vec
+            .iter()
+            .map(|v| format!("`{v}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let stacktrace_last_name = self.stack.last().unwrap();
+        self.panic(&format!("more than one `{stacktrace_last_name}` found: [{found_values_str}]"))
+    }
 }
 

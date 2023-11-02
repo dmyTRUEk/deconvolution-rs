@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
 
 
 /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + exp(-(x-s)/tc))
@@ -100,14 +100,7 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp<T> {
     }
 }
 
-impl InitialValuesVAD for InitialValues_SatExp_TwoDecExp<ValueAndDomain> {
-    // fn is_params_ok(&self, params: &Vec<float>) -> bool {
-    //     // let (amplitude, _, tau_a, tau_b, tau_c) = (params[0], params[1], params[2], params[3], params[4]);
-    //     // let Self::F { amplitude, shift, tau_a, tau_b, tau_c } = Self::f_from_vec_v(params);
-    //     // amplitude >= 0. && tau_a >= 0. && tau_b >= 0. && tau_c >= 0.
-    //     todo!()
-    // }
-}
+impl InitialValuesVAD for InitialValues_SatExp_TwoDecExp<ValueAndDomain> {}
 
 impl From<InitialValues_SatExp_TwoDecExp<ValueAndDomain>> for InitialValues_SatExp_TwoDecExp<float> {
     fn from(value: InitialValues_SatExp_TwoDecExp<ValueAndDomain>) -> Self {
@@ -125,8 +118,7 @@ impl Load for InitialValues_SatExp_TwoDecExp<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
-            .map(|part| part.trim())
-            .map(ValueAndDomain::load_from_str)
+            .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs

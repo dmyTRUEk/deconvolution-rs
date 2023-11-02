@@ -13,7 +13,7 @@ use crate::{
     utils_io::format_by_dollar_str, stacktrace::Stacktrace,
 };
 
-use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
 
 
 // a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
@@ -101,23 +101,7 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExp<T> {
     }
 }
 
-impl InitialValuesVAD for InitialValues_SatExp_DecExp<ValueAndDomain> {
-    // fn is_params_ok(&self, params: &Vec<float>) -> bool {
-    //     // let (amplitude, _, tau_a, tau_b) = (params[0], params[1], params[2], params[3]);
-    //     // let (_, tau_a, tau_b) = (params[0], params[1], params[2]);
-    //     // let Self::F { s, ta, tb } = Self::from_vec_v(params);
-    //     // amplitude >= 0. && tau_a >= 0. && tau_b >= 0.
-    //     // tau_a >= 0. && tau_b >= 0.
-    //     self.to_vec().iter()
-    //         .zip(params)
-    //         .all(|(d, &p)| d.contains(p))
-    // }
-
-    // fn randomize(&mut self, initial_values_random_scale: float) {
-    // }
-}
-
-impl InitialValuesF for InitialValues_SatExp_DecExp<float> {}
+impl InitialValuesVAD for InitialValues_SatExp_DecExp<ValueAndDomain> {}
 
 impl From<InitialValues_SatExp_DecExp<ValueAndDomain>> for InitialValues_SatExp_DecExp<float> {
     fn from(value: InitialValues_SatExp_DecExp<ValueAndDomain>) -> Self {
@@ -135,8 +119,7 @@ impl Load for InitialValues_SatExp_DecExp<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
-            .map(|part| part.trim())
-            .map(ValueAndDomain::load_from_str)
+            .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs

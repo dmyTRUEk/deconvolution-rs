@@ -13,7 +13,7 @@ use crate::{
     utils_io::format_by_dollar_str, stacktrace::Stacktrace,
 };
 
-use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
 
 
 /// a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
@@ -118,16 +118,7 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
     }
 }
 
-impl InitialValuesVAD for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {
-    fn is_params_ok(&self, params: &Vec<float>) -> bool {
-        // let (amplitude_1, shift_1, tau_a1, tau_b1) = (params[0], params[1], params[2], params[3]);
-        // let (amplitude_2, shift_2, tau_a2, tau_b2) = (params[4], params[5], params[6], params[7]);
-        // amplitude_1 >= 0. && tau_a1 >= 0. && tau_b1 >= 0. &&
-        // shift_1 < shift_2 &&
-        // amplitude_2 >= 0. && tau_a2 >= 0. && tau_b2 >= 0.
-        todo!()
-    }
-}
+impl InitialValuesVAD for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {}
 
 impl From<InitialValues_Two_SatExp_DecExp<ValueAndDomain>> for InitialValues_Two_SatExp_DecExp<float> {
     fn from(value: InitialValues_Two_SatExp_DecExp<ValueAndDomain>) -> Self {
@@ -145,8 +136,7 @@ impl Load for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
-            .map(|part| part.trim())
-            .map(ValueAndDomain::load_from_str)
+            .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs

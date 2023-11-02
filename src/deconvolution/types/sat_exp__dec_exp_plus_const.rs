@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesF, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
 
 
 /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + h)
@@ -127,6 +127,10 @@ impl InitialValuesVAD for InitialValues_SatExp_DecExpPlusConst<ValueAndDomain> {
         //     .all(|(d, &p)| d.contains(p))
         // && if self.allow_tb_less_than_ta { true } else { self.tau_a < self.tau_b }
     }
+
+    fn randomize(&mut self, initial_values_random_scale: float) {
+        todo!()
+    }
 }
 
 impl From<InitialValues_SatExp_DecExpPlusConst<ValueAndDomain>> for InitialValues_SatExp_DecExpPlusConst<float> {
@@ -145,8 +149,7 @@ impl Load for InitialValues_SatExp_DecExpPlusConst<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
-            .map(|part| part.trim())
-            .map(ValueAndDomain::load_from_str)
+            .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs
