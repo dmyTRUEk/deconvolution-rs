@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
@@ -29,7 +29,7 @@ impl DeconvolutionType for SatExp_TwoDecExp_ConstrainedConsts {
     const NAME: &'static str = "saturated exponential and two decaying exponentials with individual amplitudes";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max(0,\left(1-e^{-\frac{x$ssn$s}{$ta}}\right)\left($be^{-\frac{x$ssn$s}{$tb}}+(1$bsn$ba)e^{-\frac{x$ssn$s}{$tc}}\right))";
-    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+    const FORMAT_FOR_ORIGIN: &'static str = r"max(0,(1-exp(-(x$ssn$s)/($ta)))*($b*exp(-(x$ssn$s)/($tb))+(1$bsn$ba)*exp(-(x$ssn$s)/($tc))))";
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
         let v = InitialValues_SatExp_TwoDecExp_ConstrainedConsts::from_vec(params);

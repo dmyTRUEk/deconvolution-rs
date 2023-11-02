@@ -194,14 +194,18 @@ fn output_results(
     // println!("fit_residue_evals = {}", deconvolution_results.fit_residue_evals.to_string_underscore_separated());
 
     let params = &deconvolution_results.params;
+    let significant_digits = config.output_params.significant_digits;
 
-    let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(
-        &params,
-        config.output_params.significant_digits,
-    );
+    let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(params, significant_digits);
     if let Ok(ref desmos_function_str) = desmos_function_str {
         println!("{}", desmos_function_str);
         println!("\"fit residue: {}", deconvolution_results.fit_residue);
+        println!();
+    }
+
+    let origin_function_str = deconvolution_data.deconvolution.to_origin_function(params, significant_digits);
+    if let Ok(ref origin_function_str) = origin_function_str {
+        println!("{}", origin_function_str);
     }
 
     // let mut file_output = File::create(filepath_output).unwrap();
@@ -219,6 +223,7 @@ fn output_results(
         deconvolution_results,
         filepathstr_output,
         desmos_function_str,
+        origin_function_str,
         &fit_residue_and_evals_msg,
         params,
     );

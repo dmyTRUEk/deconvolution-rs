@@ -10,7 +10,7 @@ use crate::{
     stacktrace::Stacktrace,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// [y0, y1, y2, …]

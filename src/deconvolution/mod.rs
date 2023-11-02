@@ -175,6 +175,22 @@ impl<'a> Deconvolution {
             Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
         })
     }
+
+    // TODO: tests, check if they work in origin
+    pub fn to_origin_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
+        let sd = significant_digits;
+        Ok(format!("y=") + &match self {
+            Deconvolution::PerPoint(_) => { return Err("not plottable") },
+            Deconvolution::Exponents(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::Two_SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_DecExpPlusConst(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_TwoDecExpPlusConst(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_origin_function(params, sd),
+            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_origin_function(params, sd),
+        })
+    }
 }
 
 

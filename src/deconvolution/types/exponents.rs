@@ -12,7 +12,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// a1*exp(-(x-s1)/t1) + …
@@ -25,8 +25,8 @@ pub struct Exponents {
 impl DeconvolutionType for Exponents {
     const NAME: &'static str = "exponents";
 
-    const FORMAT_FOR_DESMOS: &'static str = r"\left\{x$comp$ns:0,$ae^{-\frac{x$p$ns}{$t}}\right\}";
-    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+    const FORMAT_FOR_DESMOS: &'static str = r"max\left(0,x$comp$ns:0,$ae^{-\frac{x$p$ns}{$t}}\right)";
+    const FORMAT_FOR_ORIGIN: &'static str = r"max($a*exp(-(x$p$ns)/($t)))";
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
         let sd = significant_digits;

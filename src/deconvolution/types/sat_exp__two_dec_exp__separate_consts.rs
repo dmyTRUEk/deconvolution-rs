@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
@@ -29,7 +29,7 @@ impl DeconvolutionType for SatExp_TwoDecExp_SeparateConsts {
     const NAME: &'static str = "saturated exponential and two decaying exponentials with individual amplitudes";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max(0,\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left($be^{-\frac{x$pm$s}{$tb}}$pmc$ce^{-\frac{x$pm$s}{$tc}}\right))";
-    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+    const FORMAT_FOR_ORIGIN: &'static str = r"max(0,(1-exp(-(x$pm$s)/($ta)))*($b*exp(-(x$pm$s)/($tb))$pmc$c*exp(-(x$pm$s)/($tc))))";
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
         let v = InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(params);
@@ -39,6 +39,7 @@ impl DeconvolutionType for SatExp_TwoDecExp_SeparateConsts {
             vec![
                 ("b", &v.amplitude_b.to_string_with_significant_digits(sd)),
                 ("c", &v.amplitude_c.abs().to_string_with_significant_digits(sd)),
+                // TODO(refactor): sign -> s => pmc -> csn, n = negative
                 ("pm", if !v.shift.is_sign_positive() { "+" } else { "-" }),
                 ("pmc", if v.amplitude_c.is_sign_positive() { "+" } else { "-" }),
                 ("s", &v.shift.abs().to_string_with_significant_digits(sd)),

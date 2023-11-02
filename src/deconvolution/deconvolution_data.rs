@@ -115,9 +115,8 @@ impl DeconvolutionData {
     }
 
     pub fn get_initial_params(&self) -> Vec<float> {
-        let spectrum_measured_len: usize = self.measured.points.len();
-        let initial_params: Vec<float> = self.deconvolution.get_initial_values(/*spectrum_measured_len*/);
-        assert_eq!(self.deconvolution.get_initial_values_len(/*spectrum_measured_len*/), initial_params.len());
+        let initial_params: Vec<float> = self.deconvolution.get_initial_values();
+        assert_eq!(self.deconvolution.get_initial_values_len(), initial_params.len());
         initial_params
     }
 
@@ -146,6 +145,7 @@ impl DeconvolutionData {
         deconvolution_results: &Fit,
         filepathstr_output: &str,
         desmos_function_str: Result<String, &str>,
+        origin_function_str: Result<String, &str>,
         fit_residue_and_evals_msg: &str,
         params: &Vec<float>,
     ) {
@@ -171,6 +171,9 @@ impl DeconvolutionData {
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
                 }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
+                }
             }
             self_ @ Deconvolution::SatExp_DecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
@@ -182,6 +185,9 @@ impl DeconvolutionData {
                 writeln!(file_output, "tau_b={tau_b}").unwrap();
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
+                }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
                 }
             }
             self_ @ Deconvolution::Two_SatExp_DecExp { .. } => {
@@ -199,6 +205,9 @@ impl DeconvolutionData {
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
                 }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
+                }
             }
             self_ @ Deconvolution::SatExp_DecExpPlusConst { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
@@ -212,6 +221,9 @@ impl DeconvolutionData {
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
                 }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
+                }
             }
             self_ @ Deconvolution::SatExp_TwoDecExp { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
@@ -224,6 +236,9 @@ impl DeconvolutionData {
                 writeln!(file_output, "tau_c={tau_c}").unwrap();
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
+                }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
                 }
             }
             self_ @ Deconvolution::SatExp_TwoDecExpPlusConst { .. } => {
@@ -239,6 +254,9 @@ impl DeconvolutionData {
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
                 }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
+                }
             }
             self_ @ Deconvolution::SatExp_TwoDecExp_SeparateConsts { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
@@ -253,6 +271,9 @@ impl DeconvolutionData {
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
                 }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
+                }
             }
             self_ @ Deconvolution::SatExp_TwoDecExp_ConstrainedConsts { .. } => {
                 writeln!(file_output, "{name} params ({fit_residue_and_evals_msg}):", name=self_.get_name()).unwrap();
@@ -266,6 +287,9 @@ impl DeconvolutionData {
                 writeln!(file_output, "tau_c={tau_c}").unwrap();
                 if let Ok(desmos_function_str) = desmos_function_str {
                     writeln!(file_output, "{desmos_function_str}").unwrap();
+                }
+                if let Ok(origin_function_str) = origin_function_str {
+                    writeln!(file_output, "{origin_function_str}").unwrap();
                 }
             }
         }

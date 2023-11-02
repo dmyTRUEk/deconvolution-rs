@@ -10,10 +10,11 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     float_type::float,
     load::Load,
-    utils_io::format_by_dollar_str, stacktrace::Stacktrace,
+    stacktrace::Stacktrace,
+    utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
@@ -32,7 +33,11 @@ impl DeconvolutionType for Two_SatExp_DecExp {
         r"+",
         r"max(0,$a2\left(1-e^{-\frac{x$pm2$s2}{$ta2}}\right)\left(e^{-\frac{x$pm2$s2}{$tb2}}\right))",
     );
-    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+    const FORMAT_FOR_ORIGIN: &'static str = concat!(
+        r"max(0,$a1*(1-exp(-(x$pm1$s1)/($ta1)))*exp(-(x$pm1$s1)/($tb1)))",
+        r"+",
+        r"max(0,$a2*(1-exp(-(x$pm2$s2)/($ta2)))*exp(-(x$pm2$s2)/($tb2)))",
+    );
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
         let values = InitialValues_Two_SatExp_DecExp::from_vec(params);

@@ -10,10 +10,11 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     float_type::float,
     load::Load,
-    utils_io::format_by_dollar_str, stacktrace::Stacktrace,
+    stacktrace::Stacktrace,
+    utils_io::format_by_dollar_str,
 };
 
-use super::{InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, DeconvolutionType, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 // a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
@@ -29,7 +30,7 @@ impl DeconvolutionType for SatExp_DecExp {
     const NAME: &'static str = "saturated decaying exponential";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}\right))";
-    const FORMAT_FOR_ORIGIN: &'static str = todo!();
+    const FORMAT_FOR_ORIGIN: &'static str = r"max(0,$a*(1-exp(-(x$pm$s)/($ta)))*(exp(-(x$pm$s)/($tb))))";
 
     fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
         let params = InitialValues_SatExp_DecExp::from_vec(params);
