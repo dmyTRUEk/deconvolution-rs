@@ -148,8 +148,10 @@ impl Load for InitialValues_SatExp_DecExpPlusConst<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
+            // TODO: add index to stacktrace
             .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
+        // TODO: assert `ivs.len` == Self::LEN
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs
                 .get(name)

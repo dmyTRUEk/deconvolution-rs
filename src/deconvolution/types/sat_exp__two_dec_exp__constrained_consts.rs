@@ -17,7 +17,7 @@ use crate::{
 use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
-/// (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + c*exp(-(x-s)/tc))
+/// a * (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SatExp_TwoDecExp_ConstrainedConsts {
@@ -26,7 +26,7 @@ pub struct SatExp_TwoDecExp_ConstrainedConsts {
 }
 
 impl DeconvolutionType for SatExp_TwoDecExp_ConstrainedConsts {
-    const NAME: &'static str = "saturated exponential and two decaying exponentials with individual amplitudes";
+    const NAME: &'static str = "saturated exponential and two decaying exponentials with constrained amplitudes";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max(0,\left(1-e^{-\frac{x$ssn$s}{$ta}}\right)\left($be^{-\frac{x$ssn$s}{$tb}}+(1$bsn$ba)e^{-\frac{x$ssn$s}{$tc}}\right))";
     const FORMAT_FOR_ORIGIN: &'static str = r"max(0,(1-exp(-(x$ssn$s)/($ta)))*($b*exp(-(x$ssn$s)/($tb))+(1$bsn$ba)*exp(-(x$ssn$s)/($tc))))";
@@ -120,8 +120,10 @@ impl Load for InitialValues_SatExp_TwoDecExp_ConstrainedConsts<ValueAndDomain> {
         let ivs: HashMap<String, ValueAndDomain> = str
             .trim_matches(|c: char| c.is_whitespace() || c == ',')
             .split(',')
+            // TODO: add index to stacktrace
             .map(|part| ValueAndDomain::load_from_str(part, stacktrace))
             .collect();
+        // TODO: assert `ivs.len` == Self::LEN
         let try_get = |name: &'static str| -> ValueAndDomain {
             *ivs
                 .get(name)
