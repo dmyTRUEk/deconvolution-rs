@@ -151,6 +151,7 @@ fn process_measured_file(
     for randomized_initial_values_i in 1..=config.deconvolution_params.try_randomized_initial_values {
         let mut deconvolution_data = deconvolution_data.clone();
         deconvolution_data.deconvolution.randomize(config.deconvolution_params.initial_values_random_scale);
+        dbg!(deconvolution_data.deconvolution.get_initial_values());
         let deconvolution_results = deconvolution_data.deconvolve(&config.fit_algorithm);
         match deconvolution_results {
             Ok(deconvolution_results_unwrapped) if deconvolution_results_unwrapped.fit_residue < best_fit_residue => {

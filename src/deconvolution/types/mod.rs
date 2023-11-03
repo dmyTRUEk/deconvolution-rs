@@ -226,7 +226,7 @@ pub trait InitialValuesGeneric<T> {
 
 
 pub trait InitialValuesVAD
-where Self: InitialValuesGeneric<ValueAndDomain>
+where Self: Sized + InitialValuesGeneric<ValueAndDomain>
 {
     /// Check if given params are satisfying conditions
     fn is_params_ok(&self, params: &Vec<float>) -> bool {
@@ -237,8 +237,11 @@ where Self: InitialValuesGeneric<ValueAndDomain>
 
     /// Randomize initial values
     fn randomize(&mut self, initial_values_random_scale: float) {
-        self.to_vec().iter_mut()
+        let mut params = self.to_vec();
+        params
+            .iter_mut()
             .for_each(|vad| vad.randomize(initial_values_random_scale));
+        *self = Self::from_vec(&params);
     }
 }
 
