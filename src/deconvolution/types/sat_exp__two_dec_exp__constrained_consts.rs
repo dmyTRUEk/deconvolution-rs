@@ -37,6 +37,7 @@ impl DeconvolutionType for SatExp_TwoDecExp_ConstrainedConsts {
         format_by_dollar_str(
             format,
             vec![
+                ("a", &v.amplitude_a.to_string_with_significant_digits(sd)),
                 ("b", &v.amplitude_b.to_string_with_significant_digits(sd)),
                 ("ba", &v.amplitude_b.abs().to_string_with_significant_digits(sd)),
                 ("bsn", if !v.amplitude_b.is_sign_positive() { "+" } else { "-" }),

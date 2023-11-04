@@ -65,7 +65,7 @@ pub fn format_by_dollar_char(str_to_fmt: &str, params: Vec<(char, &str)>) -> Str
 // TODO: make it macros
 pub fn format_by_dollar_str(str_to_fmt: &str, params: Vec<(&str, &str)>) -> String {
     const MAX_ITERS: u32 = 10_000;
-    const MAX_PARAM_NAME_LEN: usize = 100;
+    const MAX_PARAM_NAME_LEN: usize = 10;
     let params_len: usize = params.len();
     let params_hm: HashMap<&str, &str> = params.into_iter().collect();
     assert_eq!(params_len, params_hm.len(), "found duplicate in params");
