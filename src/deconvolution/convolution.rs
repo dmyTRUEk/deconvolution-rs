@@ -424,7 +424,7 @@ mod convolve {
 #[cfg(test)]
 mod deconvolution_data {
     use crate::{
-        deconvolution::Deconvolution,
+        deconvolution::DeconvolutionVariant,
         spectrum::Spectrum,
         diff_function::DiffFunction,
     };
@@ -451,7 +451,7 @@ mod deconvolution_data {
                         step: 0.2,
                         x_start: 0.3,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -468,7 +468,7 @@ mod deconvolution_data {
                         step: 0.2,
                         x_start: 0.3,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -490,7 +490,7 @@ mod deconvolution_data {
                         step: 0.2,
                         x_start: 0.9,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -507,7 +507,7 @@ mod deconvolution_data {
                         step: 0.4,
                         x_start: 0.9,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -532,7 +532,7 @@ mod deconvolution_data {
                         step: 0.4,
                         x_start: 0.5,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -549,7 +549,7 @@ mod deconvolution_data {
                         step: 0.2,
                         x_start: 0.5,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -571,7 +571,7 @@ mod deconvolution_data {
                         step: 0.4,
                         x_start: 0.9,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -588,7 +588,7 @@ mod deconvolution_data {
                         step: 0.4,
                         x_start: 0.9,
                     },
-                    deconvolution: Deconvolution::PerPoint(PerPoint {
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                         diff_function_type: DiffFunction::DySqr,
                         antispikes: None,
                         initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
@@ -606,18 +606,18 @@ mod deconvolve {
             DeconvolutionData,
             Spectrum,
             deconvolution::{
-                Deconvolution,
+                DeconvolutionVariant,
                 types::{
                     ValueAndDomain,
                     per_points::{PerPoint, InitialValues_PerPoint},
                 },
             },
             diff_function::DiffFunction,
-            fit_algorithms::{FitAlgorithm, pattern_search::PatternSearch},
+            fit_algorithms::{FitAlgorithmVariant, pattern_search::PatternSearch},
             float,
         };
         use super::super::super::deconvolution_data::DeconvolutionResultOrError;
-        const FIT_ALGORITHM: FitAlgorithm = FitAlgorithm::PatternSearch(PatternSearch {
+        const FIT_ALGORITHM: FitAlgorithmVariant = FitAlgorithmVariant::PatternSearch(PatternSearch {
             fit_algorithm_min_step: 1e-4,
             fit_residue_evals_max: 1_000_000,
             fit_residue_max_value: 1e6,
@@ -639,13 +639,13 @@ mod deconvolve {
             let deconvolution_data: DeconvolutionData = DeconvolutionData {
                 instrument,
                 measured,
-                deconvolution: Deconvolution::PerPoint(PerPoint {
+                deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
                     diff_function_type: DiffFunction::DySqr,
                     antispikes: None,
                     initial_vad: InitialValues_PerPoint::new(points_spectrum.len(), ValueAndDomain::free(0.)),
                 }),
             };
-            deconvolution_data.deconvolve(&FIT_ALGORITHM)
+            deconvolution_data.deconvolve(&FIT_ALGORITHM, None)
         }
         mod instrument_is_identity {
             use super::*;

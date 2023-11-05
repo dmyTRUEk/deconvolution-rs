@@ -8,13 +8,13 @@ use toml::{
 };
 
 use crate::{
-    fit_algorithms::FitAlgorithm,
+    fit_algorithms::FitAlgorithmVariant,
     float_type::float,
     load::Load,
     stacktrace::Stacktrace,
 };
 
-use super::deconvolution::{Deconvolution, deconvolution_data::AlignStepsTo};
+use super::deconvolution::{DeconvolutionVariant, deconvolution_data::AlignStepsTo};
 
 
 
@@ -56,7 +56,7 @@ impl Config {
 }
 
 
-pub type ConfigDeconvolutionFunc = Deconvolution;
+pub type ConfigDeconvolutionFunc = DeconvolutionVariant;
 
 #[derive(Debug, PartialEq)]
 pub struct ConfigDeconvolutionParams {
@@ -142,7 +142,7 @@ impl Load for ConfigOutputParams {
     }
 }
 
-type ConfigFitAlgorithmParams = FitAlgorithm;
+type ConfigFitAlgorithmParams = FitAlgorithmVariant;
 
 
 

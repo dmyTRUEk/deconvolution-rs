@@ -127,8 +127,8 @@ impl InitialValuesVAD for InitialValues_SatExp_DecExpPlusConst<ValueAndDomain> {
         // && if self.allow_tb_less_than_ta { true } else { self.tau_a < self.tau_b }
     }
 
-    fn randomize(&mut self, initial_values_random_scale: float) {
-        todo!()
+    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
+        unimplemented!()
     }
 }
 

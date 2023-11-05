@@ -17,7 +17,7 @@ pub mod sat_exp__two_dec_exp_plus_const;
 #[allow(non_snake_case)]
 pub mod two__sat_exp__dec_exp;
 
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng, rngs::ThreadRng};
 
 use crate::{
     extensions::SplitAndKeep,
@@ -117,13 +117,14 @@ impl ValueAndDomain {
         }
     }
 
-    pub fn randomize(&mut self, initial_values_random_scale: float) {
-        let mut rng = thread_rng();
+    pub fn get_randomized(&self, initial_values_random_scale: float) -> float {
+        self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
+    }
+
+    pub fn get_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> float {
         match self.domain {
-            ValueDomain::Fixed => return,
-            ValueDomain::Free => {
-                self.value *= rng.gen_range(1./initial_values_random_scale .. initial_values_random_scale);
-            }
+            ValueDomain::Fixed => self.value,
+            ValueDomain::Free => self.value * rng.gen_range(1./initial_values_random_scale .. initial_values_random_scale),
             ValueDomain::RangeClosed(..)
             | ValueDomain::RangeWithMin(..)
             | ValueDomain::RangeWithMax(..)
@@ -131,8 +132,7 @@ impl ValueAndDomain {
                 loop {
                     let new_value = self.value * rng.gen_range(1./initial_values_random_scale .. initial_values_random_scale);
                     if self.contains(new_value) {
-                        self.value = new_value;
-                        break;
+                        return new_value;
                     }
                 }
             }
@@ -235,13 +235,17 @@ where Self: Sized + InitialValuesGeneric<ValueAndDomain>
             .all(|(vad, &value)| vad.contains(value))
     }
 
-    /// Randomize initial values
-    fn randomize(&mut self, initial_values_random_scale: float) {
-        let mut params = self.to_vec();
-        params
-            .iter_mut()
-            .for_each(|vad| vad.randomize(initial_values_random_scale));
-        *self = Self::from_vec(&params);
+    /// Get randomized initial values
+    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
+        self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
+    }
+
+    /// Get randomized initial values with given `ThreadRng`
+    fn get_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> Vec<float> {
+        self.to_vec()
+            .iter()
+            .map(|vad| vad.get_randomized_with_rng(initial_values_random_scale, rng))
+            .collect()
     }
 }
 

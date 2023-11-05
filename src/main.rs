@@ -56,6 +56,7 @@ fn main() {
     println!(" done");
 
     for filepathstr_measured in cli_args[2..].iter() {
+        println!();
         process_measured_file(
             &config,
             instrument.clone(),
@@ -128,7 +129,7 @@ fn process_measured_file(
     println!("fit_residue @ initial_values: {:.4}", fit_residue_with_initial_values);
     println!();
 
-    let deconvolve_results = deconvolution_data.deconvolve(&config.fit_algorithm);
+    let deconvolve_results = deconvolution_data.deconvolve(&config.fit_algorithm, None);
     match deconvolve_results {
         Err(err) => println!("ERROR: {}", err),
         Ok(ref deconvolution_results_unwrapped) => {
@@ -149,15 +150,15 @@ fn process_measured_file(
 
     let mut best_fit_residue: float = if deconvolve_results.is_ok() { deconvolve_results.unwrap().fit_residue } else { float::MAX };
     for randomized_initial_values_i in 1..=config.deconvolution_params.try_randomized_initial_values {
-        let mut deconvolution_data = deconvolution_data.clone();
-        deconvolution_data.deconvolution.randomize(config.deconvolution_params.initial_values_random_scale);
-        let deconvolution_results = deconvolution_data.deconvolve(&config.fit_algorithm);
+        let deconvolution_results = deconvolution_data.deconvolve(
+            &config.fit_algorithm,
+            Some(config.deconvolution_params.initial_values_random_scale)
+        );
         match deconvolution_results {
             Ok(deconvolution_results_unwrapped) if deconvolution_results_unwrapped.fit_residue < best_fit_residue => {
                 best_fit_residue = deconvolution_results_unwrapped.fit_residue;
                 println!("{}", "-".repeat(42));
                 println!("initial values tried: {}", randomized_initial_values_i);
-                // let Deconvolution::Exponents { initial_values, .. } = deconvolution_data.deconvolution else { unreachable!() };
                 // dbg!(initial_values);
                 output_results(
                     &config,
@@ -168,16 +169,15 @@ fn process_measured_file(
                 );
                 println!("{}", "-".repeat(42));
             }
-            _ => {
-                if !config.deconvolution_params.print_only_better_deconvolution {
-                    println!(
-                        "fit_residue: {}",
-                        deconvolution_results.as_ref()
-                            .map(|dr| format!("{:.4}", dr.fit_residue))
-                            .unwrap_or_else(|err| format!("Error: {err}"))
-                    );
-                }
-            },
+            _ if !config.deconvolution_params.print_only_better_deconvolution => {
+                println!(
+                    "fit_residue: {}",
+                    deconvolution_results.as_ref()
+                        .map(|dr| format!("{:.4}", dr.fit_residue))
+                        .unwrap_or_else(|err| format!("Error: {err}"))
+                );
+            }
+            _ => {}
         }
     }
 }

@@ -80,8 +80,8 @@ impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoi
 }
 
 impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {
-    fn randomize(&mut self, initial_values_random_scale: float) {
-        todo!()
+    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
+        unimplemented!()
     }
 }
 

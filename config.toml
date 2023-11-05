@@ -54,10 +54,10 @@ initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"
 
 
 [deconvolution_params]
-try_randomized_initial_values = 0
+try_randomized_initial_values = 10
 initial_values_random_scale = 10.0
 change_sing_probability = 0.05
-print_only_better_deconvolution = true
+print_only_better_deconvolution = false
 
 [input_params]
 align_steps_to = "smaller"
@@ -81,11 +81,20 @@ significant_digits = 4
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
 
-[fit_algorithm.pattern_search_adaptive_step]
-fit_algorithm_min_step = 1e-4
+# [fit_algorithm.pattern_search_adaptive_step]
+# fit_algorithm_min_step = 1e-4
+# fit_residue_evals_max = 1_000_000
+# fit_residue_max_value = 1e6
+# initial_step = 0.1
+# alpha = 1.1     # step increase coefficient
+# # beta = 0.9    # step decrease coefficient, default = 1/alpha
+
+[fit_algorithm.differential_evolution]
+initial_values_random_scale = 10.0
+generations = 1_000
+population  = 100
+mutation_speed        = 0.2
+crossover_probability = 0.5
 fit_residue_evals_max = 1_000_000
 fit_residue_max_value = 1e6
-initial_step = 0.1
-alpha = 1.1     # step increase coefficient
-# beta = 0.9    # step decrease coefficient, default = 1/alpha
 

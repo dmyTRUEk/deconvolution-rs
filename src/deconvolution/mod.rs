@@ -8,6 +8,7 @@ pub(self) mod convolution;
 
 use std::cmp::Ordering;
 
+use rand::{rngs::ThreadRng, thread_rng};
 use toml::Value as TomlValue;
 
 use crate::{
@@ -35,7 +36,7 @@ use self::types::{
 /// Deconvolution type and it's corresponding params.
 #[allow(dead_code, non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq)]
-pub enum Deconvolution {
+pub enum DeconvolutionVariant {
     PerPoint(PerPoint),
     Exponents(Exponents),
     SatExp_DecExp(SatExp_DecExp),
@@ -48,7 +49,7 @@ pub enum Deconvolution {
     // Fourier { unimplemented },
 }
 
-impl<'a> Deconvolution {
+impl DeconvolutionVariant {
     pub fn get_name(&self) -> &'static str {
         match self {
             Self::PerPoint(_) => PerPoint::NAME,
@@ -91,6 +92,25 @@ impl<'a> Deconvolution {
         }
     }
 
+    pub fn get_initial_values_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
+        let mut rng = thread_rng();
+        self.get_initial_values_randomized_with_rng(initial_values_random_scale, &mut rng)
+    }
+
+    pub fn get_initial_values_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> Vec<float> {
+        match self {
+            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+        }
+    }
+
     pub fn is_params_ok(&self, params: &Vec<float>) -> bool {
         match self {
             Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok(params),
@@ -129,34 +149,20 @@ impl<'a> Deconvolution {
 
     pub fn calc_residue_function(&self, points_measured: &Vec<float>, points_convolved: &Vec<float>) -> float {
         match self {
-            Deconvolution::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
+            Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
                 diff_function_type.calc_diff_with_antispikes(points_measured, points_convolved, antispikes)
             }
-            Deconvolution::Exponents(Exponents { diff_function_type, .. })
-            | Deconvolution::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
-            | Deconvolution::SatExp_TwoDecExp(SatExp_TwoDecExp { diff_function_type, .. })
-            | Deconvolution::Two_SatExp_DecExp(Two_SatExp_DecExp { diff_function_type, .. })
-            | Deconvolution::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
-            | Deconvolution::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
-            | Deconvolution::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
-            | Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
+            Self::Exponents(Exponents { diff_function_type, .. })
+            | Self::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp(SatExp_TwoDecExp { diff_function_type, .. })
+            | Self::Two_SatExp_DecExp(Two_SatExp_DecExp { diff_function_type, .. })
+            | Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
+            | Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
             => {
                 diff_function_type.calc_diff(points_measured, points_convolved)
             }
-        }
-    }
-
-    pub fn randomize(&mut self, initial_values_random_scale: float) {
-        match self {
-            Deconvolution::PerPoint(_) => panic!("there is no need to try different initial params"),
-            Deconvolution::Exponents(Exponents { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_DecExp(SatExp_DecExp { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_TwoDecExp(SatExp_TwoDecExp { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::Two_SatExp_DecExp(Two_SatExp_DecExp { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
-            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { ref mut initial_vads, .. }) => initial_vads.randomize(initial_values_random_scale),
         }
     }
 
@@ -164,15 +170,15 @@ impl<'a> Deconvolution {
     pub fn to_desmos_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
         Ok(format!("y=") + &match self {
-            Deconvolution::PerPoint(_) => { return Err("not plottable") },
-            Deconvolution::Exponents(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::Two_SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_DecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_TwoDecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_desmos_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
+            Self::PerPoint(_) => { return Err("not plottable") },
+            Self::Exponents(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_TwoDecExp(self_) => self_.to_desmos_function(params, sd),
+            Self::Two_SatExp_DecExp(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_DecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_TwoDecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_desmos_function(params, sd),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
         })
     }
 
@@ -180,21 +186,21 @@ impl<'a> Deconvolution {
     pub fn to_origin_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
         Ok(format!("y=") + &match self {
-            Deconvolution::PerPoint(_) => { return Err("not plottable") },
-            Deconvolution::Exponents(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::Two_SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_DecExpPlusConst(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_TwoDecExpPlusConst(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_origin_function(params, sd),
-            Deconvolution::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_origin_function(params, sd),
+            Self::PerPoint(_) => { return Err("not plottable") },
+            Self::Exponents(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_TwoDecExp(self_) => self_.to_origin_function(params, sd),
+            Self::Two_SatExp_DecExp(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_DecExpPlusConst(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_TwoDecExpPlusConst(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_origin_function(params, sd),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_origin_function(params, sd),
         })
     }
 }
 
 
-impl Load for Deconvolution {
+impl Load for DeconvolutionVariant {
     const TOML_NAME: &'static str = "deconvolution_function";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 9] = [

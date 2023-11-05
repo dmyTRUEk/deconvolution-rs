@@ -115,7 +115,7 @@ impl InitialValuesVAD for InitialValues_Exponents<ValueAndDomain> {
         })
     }
 
-    fn randomize(&mut self, initial_values_random_scale: float) {
+    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
         todo!()
     }
 }

@@ -15,33 +15,33 @@ use crate::{
 use super::{Fit, FitResult};
 
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PatternSearchAdaptiveStep {
-    pub fit_algorithm_min_step: float,
+    fit_algorithm_min_step: float,
     // TODO(feat):
     // fit_residue_goal: float,
-    pub fit_residue_evals_max: u64,
-    pub fit_residue_max_value: float,
-    pub initial_step: float,
-    pub alpha: float,
-    pub beta: Option<float>,
+    fit_residue_evals_max: u64,
+    fit_residue_max_value: float,
+    initial_step: float,
+    alpha: float,
+    beta: Option<float>,
 }
 
 impl PatternSearchAdaptiveStep {
-    pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResult {
+    pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Vec<float>) -> FitResult {
         const DEBUG: bool = false;
 
-        let PatternSearchAdaptiveStep { fit_algorithm_min_step, fit_residue_evals_max, fit_residue_max_value, initial_step, alpha, beta } = self.clone();
+        let Self { fit_algorithm_min_step, fit_residue_evals_max, fit_residue_max_value, initial_step, alpha, beta } = *self;
         let beta = beta.unwrap_or(1. / alpha);
 
-        let f_params_amount: usize = deconvolution_data.get_params_amount();
+        let f_params_amount: usize = initial_params.len();
         if f_params_amount == 0 {
             return Err("too few params");
             // return None;
         }
 
         type Params = Vec<float>;
-        let mut params: Params = deconvolution_data.get_initial_params();
+        let mut params: Params = initial_params;
         let mut step: float = initial_step;
         let mut fit_residue_evals: u64 = 0;
 
@@ -59,27 +59,26 @@ impl PatternSearchAdaptiveStep {
                 println!("step = {}", step);
             }
 
-            let (fit_residue_evals_extra, ress_at_shifted_params): (Vec<u64>, Vec<float>) =
-                (0..2*params.len())
-                    // .into_iter()
-                    .into_par_iter()
-                    .map(|i| -> (u64, float) {
-                        let delta = if i % 2 == 0 { -step } else { step };
-                        let delta = params[i/2] * delta;
-                        let param_new = params[i/2] + delta;
-                        // if !param_new.is_finite() { return Err("`param.value + delta` isn't finite") }
-                        // TODO(optimization)?: remove `.is_finite()` check, bc it already will be "done" when calculating residue function.
-                        let mut params_new = params.clone();
-                        params_new[i/2] = param_new;
-                        if !param_new.is_finite() || !deconvolution_data.is_params_ok(&params_new) {
-                            (0, float::NAN)
-                        } else {
-                            let res = deconvolution_data.calc_residue_function(&params_new);
-                            (1, if res.is_finite() { res } else { float::NAN })
-                        }
-                        // returns tuple of `residue_function_evals` and `residue_result`.
-                    })
-                    .unzip();
+            let (fit_residue_evals_extra, ress_at_shifted_params): (Vec<u64>, Vec<float>) = (0..2*f_params_amount)
+                // .into_iter()
+                .into_par_iter()
+                .map(|i| -> (u64, float) {
+                    let delta = if i % 2 == 0 { -step } else { step };
+                    let delta = params[i/2] * delta;
+                    let param_new = params[i/2] + delta;
+                    // if !param_new.is_finite() { return Err("`param.value + delta` isn't finite") }
+                    // TODO(optimization)?: remove `.is_finite()` check, bc it already will be "done" when calculating residue function.
+                    let mut params_new = params.clone();
+                    params_new[i/2] = param_new;
+                    if !deconvolution_data.is_params_ok(&params_new) || !param_new.is_finite() {
+                        (0, float::NAN)
+                    } else {
+                        let residue = deconvolution_data.calc_residue_function(&params_new);
+                        (1, if residue.is_finite() { residue } else { float::NAN })
+                    }
+                    // returns tuple of `residue_function_evals` and `residue_result`.
+                })
+                .unzip();
             fit_residue_evals += fit_residue_evals_extra.iter().sum::<u64>();
 
             if DEBUG { println!("res_at_shifted_params = {:?}", ress_at_shifted_params) }
