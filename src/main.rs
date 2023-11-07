@@ -95,22 +95,18 @@ fn process_measured_file(
     const FILENAME_PREFIX: &str = "result";
 
     let build_filepathstr_output = |randomized_initial_values_i: u64| -> String {
+        let riv = if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) };
         let filepath_output = file_spectrum.with_file_name(format!(
-            "{FILENAME_PREFIX}_{}_{}{}.dat",
-            filepathstr_instrument_stem,
-            filepathstr_spectrum_stem,
-            if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
+            "{FILENAME_PREFIX}_{filepathstr_instrument_stem}_{filepathstr_spectrum_stem}{riv}.dat"
         ));
         let filepathstr_output: String = filepath_output.to_str().unwrap().to_string();
         filepathstr_output
     };
 
     let build_filepathstr_output_convolved = |randomized_initial_values_i: u64| -> String {
+        let riv = if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) };
         let filepath_output_convolved = file_spectrum.with_file_name(format!(
-            "{FILENAME_PREFIX}_{}_{}{}_convolved.dat",
-            filepathstr_instrument_stem,
-            filepathstr_spectrum_stem,
-            if randomized_initial_values_i == 0 { "".to_string() } else { format!("_riv{}", randomized_initial_values_i) },
+            "{FILENAME_PREFIX}_{filepathstr_instrument_stem}_{filepathstr_spectrum_stem}{riv}_convolved.dat",
         ));
         let filepathstr_output_convolved: String = filepath_output_convolved.to_str().unwrap().to_string();
         filepathstr_output_convolved
@@ -196,10 +192,13 @@ fn output_results(
     let params = &deconvolution_results.params;
     let significant_digits = config.output_params.significant_digits;
 
+    let chi_squared: float = deconvolution_data.calc_chi_squared(deconvolution_results);
+
     let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(params, significant_digits);
     if let Ok(ref desmos_function_str) = desmos_function_str {
         println!("{}", desmos_function_str);
         println!("\"fit residue: {}", deconvolution_results.fit_residue);
+        println!("\"chi squared: {chi_squared}");
         println!();
     }
 
@@ -214,8 +213,8 @@ fn output_results(
     // for (x, point) in (1010..=1089).zip(deconvolve_results.points) {
     //     writeln!(file_output, "{x}\t{p}", p=point).unwrap();
     // }
-    let fit_residue_and_evals_msg = format!(
-        "fit residue {fr:.3} achieved in {fre} fit residue function evals",
+    let fit_residue_chisq_and_evals_msg = format!(
+        "fit residue {fr:.3} and Chi-squared {chi_squared} achieved in {fre} fit residue function evals",
         fr=deconvolution_results.fit_residue,
         fre=deconvolution_results.fit_residue_evals,
     );
@@ -224,7 +223,7 @@ fn output_results(
         filepathstr_output,
         desmos_function_str,
         origin_function_str,
-        &fit_residue_and_evals_msg,
+        &fit_residue_chisq_and_evals_msg,
         params,
     );
 
