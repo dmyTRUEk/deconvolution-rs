@@ -167,7 +167,7 @@ impl DeconvolutionData {
                 // .into_iter()
                 .into_par_iter()
                 .zip_eq(observed)
-                .map(|(&e, o)| if e != 0. { (o - e) / e } else { 0. })
+                .map(|(&e, o)| if e != 0. { (o - e).powi(2) / e } else { 0. })
                 .sum::<float>()
         );
         if DEBUG {
