@@ -620,7 +620,6 @@ mod deconvolve {
         const FIT_ALGORITHM: FitAlgorithmVariant = FitAlgorithmVariant::PatternSearch(PatternSearch {
             fit_algorithm_min_step: 1e-4,
             fit_residue_evals_max: 1_000_000,
-            fit_residue_max_value: 1e6,
             initial_step: 1.,
             alpha: 1.1,
             beta: None,

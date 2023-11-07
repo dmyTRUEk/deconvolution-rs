@@ -21,7 +21,6 @@ pub struct PatternSearchScaledStep {
     // TODO(feat):
     // fit_residue_goal: float,
     fit_residue_evals_max: u64,
-    fit_residue_max_value: float,
     initial_step: float,
     alpha: float,
     beta: Option<float>,
@@ -31,7 +30,7 @@ impl PatternSearchScaledStep {
     pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Vec<float>) -> FitResult {
         const DEBUG: bool = false;
 
-        let Self { fit_algorithm_min_step, fit_residue_evals_max, fit_residue_max_value, initial_step, alpha, beta } = *self;
+        let Self { fit_algorithm_min_step, fit_residue_evals_max, initial_step, alpha, beta } = *self;
         let beta = beta.unwrap_or(1. / alpha);
 
         let f_params_amount: usize = initial_params.len();
@@ -51,7 +50,7 @@ impl PatternSearchScaledStep {
         if DEBUG { println!("res_at_current_params = {}", res_at_current_params) }
         if !res_at_current_params.is_finite() { return Err("`res_at_current_params` isn't finite") }
         // if !res_at_current_params.is_finite() { return None }
-        if res_at_current_params >= fit_residue_max_value { return Err("`res_at_current_params` is too big") }
+        // if res_at_current_params >= fit_residue_max_value { return Err("`res_at_current_params` is too big") }
 
         while step > fit_algorithm_min_step && fit_residue_evals < fit_residue_evals_max {
         // while residue_function(&params, &points_instrument, &points_spectrum) > FIT_RESIDUE_GOAL && fit_residue_evals < fit_residue_evals_max
@@ -98,7 +97,7 @@ impl PatternSearchScaledStep {
                     if DEBUG { println!("res_at_current_params = {}", res_at_current_params) }
                     if !res_at_current_params.is_finite() { return Err("`res_at_current_params` isn't finite") }
                     // if !res_at_current_params.is_finite() { return None }
-                    if res_at_current_params >= fit_residue_max_value { return Err("`res_at_current_params` is too big") }
+                    // if res_at_current_params >= fit_residue_max_value { return Err("`res_at_current_params` is too big") }
 
                     step *= alpha;
                 }
@@ -141,17 +140,18 @@ impl Load for PatternSearchScaledStep {
                 .as_float()
                 .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
         };
-        let fit_residue_evals_max = {
-            let name = "fit_residue_evals_max";
+        let load_u64 = |name: &'static str| -> u64 {
             let stacktrace = stacktrace.pushed(name);
-            toml_value
+            let value = toml_value
                 .get(name)
                 .unwrap_or_else(|| stacktrace.panic_not_found())
                 .as_integer()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("int"));
+            if !(u64::MIN as i128..=u64::MAX as i128).contains(&(value as i128)) {
+                stacktrace.panic_cant_parse_as("u64")
+            }
+            value as u64
         };
-        assert!(fit_residue_evals_max > 0);
-        let fit_residue_evals_max = fit_residue_evals_max as u64;
         let beta = {
             let name = "beta";
             let stacktrace = stacktrace.pushed(name);
@@ -165,8 +165,7 @@ impl Load for PatternSearchScaledStep {
         };
         Self {
             fit_algorithm_min_step: load_float("fit_algorithm_min_step"),
-            fit_residue_evals_max,
-            fit_residue_max_value: load_float("fit_residue_max_value"),
+            fit_residue_evals_max: load_u64("fit_residue_evals_max"),
             initial_step: load_float("initial_step"),
             alpha: load_float("alpha"),
             beta,

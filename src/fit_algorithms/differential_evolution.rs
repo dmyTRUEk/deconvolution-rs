@@ -27,15 +27,13 @@ pub struct DifferentialEvolution {
     crossover_probability: float,
     // TODO(feat):
     // fit_residue_goal: float,
-    fit_residue_evals_max: u64,
-    fit_residue_max_value: float,
 }
 
 impl DifferentialEvolution {
     pub fn fit(&self, deconvolution_data: &DeconvolutionData) -> FitResult {
         const DEBUG: bool = false;
 
-        let Self { initial_values_random_scale, generations, population, mutation_speed, crossover_probability, fit_residue_evals_max, fit_residue_max_value } = *self;
+        let Self { initial_values_random_scale, generations, population, mutation_speed, crossover_probability } = *self;
 
         let f_params_amount: usize = deconvolution_data.deconvolution.get_initial_values_len();
         if f_params_amount == 0 {
@@ -62,7 +60,7 @@ impl DifferentialEvolution {
         if DEBUG { println!("res_at_current_gen = {:?}", ress_of_current_gen) }
         if ress_of_current_gen.iter().all(|r| !r.is_finite()) { return Err("`res_at_current_params` isn't finite") }
         // if !res_at_current_params.is_finite() { return None }
-        if ress_of_current_gen.iter().all(|&r| r >= fit_residue_max_value) { return Err("`res_at_current_params` is too big") }
+        // if ress_of_current_gen.iter().all(|&r| r >= fit_residue_max_value) { return Err("`res_at_current_params` is too big") }
 
         let mut successful_mutations: u64 = 0;
         for gen_i in 0..generations {
@@ -189,26 +187,12 @@ impl Load for DifferentialEvolution {
             }
             value as usize
         };
-        let load_u64 = |name: &'static str| -> u64 {
-            let stacktrace = stacktrace.pushed(name);
-            let value = toml_value
-                .get(name)
-                .unwrap_or_else(|| stacktrace.panic_not_found())
-                .as_integer()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("int"));
-            if !(u64::MIN as i128..=u64::MAX as i128).contains(&(value as i128)) {
-                stacktrace.panic_cant_parse_as("u64")
-            }
-            value as u64
-        };
         Self {
             initial_values_random_scale: load_float("initial_values_random_scale"),
             generations: load_usize("generations"),
             population: load_usize("population"),
             mutation_speed: load_float("mutation_speed"),
             crossover_probability: load_float("crossover_probability"),
-            fit_residue_evals_max: load_u64("fit_residue_evals_max"),
-            fit_residue_max_value: load_float("fit_residue_max_value"),
         }
     }
 }

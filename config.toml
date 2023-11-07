@@ -50,7 +50,8 @@
 # y = a * (1-exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
 [deconvolution_function.SatExp_TwoDecExp_ConstrainedConsts]
 diff_function_type = "DySqr"
-initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"
+# initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"
+initial_values = "a=0.5, b=0.8, s=0.1, ta=0.01, tb=0.1, tc=1"
 
 
 [deconvolution_params]
@@ -68,7 +69,6 @@ significant_digits = 4
 # [fit_algorithm.pattern_search]
 # fit_algorithm_min_step = 1e-4
 # fit_residue_evals_max = 1_000_000
-# fit_residue_max_value = 1e6
 # initial_step = 1.0
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
@@ -76,7 +76,6 @@ significant_digits = 4
 # [fit_algorithm.pattern_search_scaled_step]
 # fit_algorithm_min_step = 1e-4
 # fit_residue_evals_max = 1_000_000
-# fit_residue_max_value = 1e6
 # initial_step = 0.1
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
@@ -84,7 +83,6 @@ significant_digits = 4
 # [fit_algorithm.pattern_search_adaptive_step]
 # fit_algorithm_min_step = 1e-4
 # fit_residue_evals_max = 1_000_000
-# fit_residue_max_value = 1e6
 # initial_step = 0.1
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
@@ -95,6 +93,4 @@ generations = 1_000
 population  = 100
 mutation_speed        = 0.2
 crossover_probability = 0.5
-fit_residue_evals_max = 1_000_000
-fit_residue_max_value = 1e6
 
