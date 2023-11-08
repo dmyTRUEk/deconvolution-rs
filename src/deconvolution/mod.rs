@@ -185,7 +185,7 @@ impl DeconvolutionVariant {
     // TODO: tests, check if they work in origin
     pub fn to_origin_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
-        Ok(format!("y=") + &match self {
+        Ok(match self {
             Self::PerPoint(_) => { return Err("not plottable") },
             Self::Exponents(self_) => self_.to_origin_function(params, sd),
             Self::SatExp_DecExp(self_) => self_.to_origin_function(params, sd),

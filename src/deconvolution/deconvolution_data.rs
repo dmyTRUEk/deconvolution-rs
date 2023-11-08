@@ -2,7 +2,6 @@
 
 use std::{cmp::Ordering, fs::File, io::Write};
 
-use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use toml::Value as TomlValue;
 
 use crate::{
@@ -150,12 +149,14 @@ impl DeconvolutionData {
         points_convolved
     }
 
+    #[deprecated]
     pub fn calc_chi_squared(&self, deconvolution_results: &Fit) -> float {
         const DEBUG: bool = false;
         let points_convolved = self.convolve_from_params(&deconvolution_results.params);
         let expected = &self.measured.points;
         let observed = points_convolved;
         assert_eq!(expected.len(), observed.len());
+        todo!("normalize expected to sum == 1");
         if DEBUG {
             for (e, o) in expected.into_iter().zip(&observed) {
                 println!("e={e}, o={o}");
@@ -164,9 +165,8 @@ impl DeconvolutionData {
         let n: float = expected.len() as float;
         let chi_squared: float = n * (
             expected
-                // .into_iter()
-                .into_par_iter()
-                .zip_eq(observed)
+                .into_iter()
+                .zip(observed)
                 .map(|(&e, o)| if e != 0. { (o - e).powi(2) / e } else { 0. })
                 .sum::<float>()
         );
@@ -177,177 +177,145 @@ impl DeconvolutionData {
         chi_squared
     }
 
+    pub fn calc_reduced_chi_square(&self, deconvolution_results: &Fit) -> float {
+        // src: https://www.originlab.com/doc/Quick-Help/measure-fitresult
+        deconvolution_results.fit_residue / (self.deconvolution.get_initial_values_len() as float)
+    }
+
+    pub fn calc_r_square(&self, deconvolution_results: &Fit) -> float {
+        // src: https://en.wikipedia.org/wiki/Coefficient_of_determination#Definitions
+        let residual_sum_of_squares = deconvolution_results.fit_residue;
+        let y_avg = self.measured.points.iter().sum::<float>() / (self.measured.points.len() as float);
+        let total_sum_of_squares = self.measured.points.iter()
+            .map(|y_i| (y_i - y_avg).powi(2))
+            .sum::<float>();
+        let r_square = 1. - residual_sum_of_squares / total_sum_of_squares;
+        assert!(r_square >= 0.);
+        assert!(r_square <= 1.);
+        r_square
+    }
+
+    pub fn calc_adjusted_r_square(&self, deconvolution_results: &Fit) -> float {
+        // src: https://en.wikipedia.org/wiki/Coefficient_of_determination#Adjusted_R2
+        let r_square = self.calc_r_square(deconvolution_results);
+        let n = self.measured.points.len() as float;
+        let p = self.deconvolution.get_initial_values_len() as float;
+        1. - (1. - r_square) * ( (n-1.) / (n-p-1.) )
+    }
+
     pub fn write_result_to_file(
         &self,
         deconvolution_results: &Fit,
         filepathstr_output: &str,
         desmos_function_str: Result<String, &str>,
         origin_function_str: Result<String, &str>,
-        fit_residue_chisq_and_evals_msg: &str,
+        fit_goodness_msg: &str,
         params: &Vec<float>,
     ) {
-        type DV = DeconvolutionVariant;
-        // TODO(refactor): make this a method in corresponding type
         let mut file_output = File::create(filepathstr_output).unwrap();
+        writeln!(file_output, "name: {name}", name=self.deconvolution.get_name()).unwrap();
+        // TODO(feat): "function: y(x) = ..."
+        writeln!(file_output, "").unwrap();
+        writeln!(file_output, "{fit_goodness_msg}").unwrap();
+        writeln!(file_output, "").unwrap();
+        writeln!(file_output, "params:").unwrap();
+        // TODO(refactor): make this a method in corresponding types
+        type DV = DeconvolutionVariant;
         match &self.deconvolution {
-            self_ @ DV::PerPoint { .. } => {
+            DV::PerPoint(..) => {
                 let sd_deconvolved = Spectrum {
                     points: deconvolution_results.params.clone(),
                     step: self.get_step(),
                     x_start: self.measured.x_start,
                 };
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
                 sd_deconvolved.write_to_file(filepathstr_output);
             }
-            self_ @ DV::Exponents { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
-                for [amplitude, shift, tau] in deconvolution_results.params.array_chunks() {
-                    writeln!(file_output, "amplitude={amplitude}").unwrap();
-                    writeln!(file_output, "shift={shift}").unwrap();
-                    writeln!(file_output, "tau={tau}").unwrap();
-                }
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
+            DV::Exponents(..) => {
+                for (i, [amplitude, shift, tau]) in deconvolution_results.params.array_chunks().enumerate() {
+                    writeln!(file_output, "- i={i}:").unwrap();
+                    writeln!(file_output, "  - amplitude={amplitude}").unwrap();
+                    writeln!(file_output, "  - shift={shift}").unwrap();
+                    writeln!(file_output, "  - tau={tau}").unwrap();
                 }
             }
-            self_ @ DV::SatExp_DecExp { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_DecExp(..) => {
                 type SelfF = InitialValues_SatExp_DecExp<float>;
                 let SelfF { amplitude, shift, tau_a, tau_b } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude={amplitude}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude={amplitude}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
             }
-            self_ @ DV::Two_SatExp_DecExp { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::Two_SatExp_DecExp(..) => {
                 type SelfF = InitialValues_Two_SatExp_DecExp<float>;
                 let SelfF { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude_1={amplitude_1}").unwrap();
-                writeln!(file_output, "shift_1={shift_1}").unwrap();
-                writeln!(file_output, "tau_a1={tau_a1}").unwrap();
-                writeln!(file_output, "tau_b1={tau_b1}").unwrap();
-                writeln!(file_output, "amplitude_2={amplitude_2}").unwrap();
-                writeln!(file_output, "shift_2={shift_2}").unwrap();
-                writeln!(file_output, "tau_a2={tau_a2}").unwrap();
-                writeln!(file_output, "tau_b2={tau_b2}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude_1={amplitude_1}").unwrap();
+                writeln!(file_output, "- shift_1={shift_1}").unwrap();
+                writeln!(file_output, "- tau_a1={tau_a1}").unwrap();
+                writeln!(file_output, "- tau_b1={tau_b1}").unwrap();
+                writeln!(file_output, "- amplitude_2={amplitude_2}").unwrap();
+                writeln!(file_output, "- shift_2={shift_2}").unwrap();
+                writeln!(file_output, "- tau_a2={tau_a2}").unwrap();
+                writeln!(file_output, "- tau_b2={tau_b2}").unwrap();
             }
-            self_ @ DV::SatExp_DecExpPlusConst { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_DecExpPlusConst(..) => {
                 type SelfF = InitialValues_SatExp_DecExpPlusConst<float>;
                 let SelfF { amplitude, shift, height, tau_a, tau_b } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude={amplitude}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "height={height}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude={amplitude}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- height={height}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
             }
-            self_ @ DV::SatExp_TwoDecExp { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_TwoDecExp(..) => {
                 type SelfF = InitialValues_SatExp_TwoDecExp<float>;
                 let SelfF { amplitude, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude={amplitude}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                writeln!(file_output, "tau_c={tau_c}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude={amplitude}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
+                writeln!(file_output, "- tau_c={tau_c}").unwrap();
             }
-            self_ @ DV::SatExp_TwoDecExpPlusConst { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_TwoDecExpPlusConst(..) => {
                 type SelfF = InitialValues_SatExp_TwoDecExpPlusConst<float>;
                 let SelfF { amplitude, shift, height, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude={amplitude}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "height={height}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                writeln!(file_output, "tau_c={tau_c}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude={amplitude}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- height={height}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
+                writeln!(file_output, "- tau_c={tau_c}").unwrap();
             }
-            self_ @ DV::SatExp_TwoDecExp_SeparateConsts { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_TwoDecExp_SeparateConsts(..) => {
                 type SelfF = InitialValues_SatExp_TwoDecExp_SeparateConsts<float>;
                 let SelfF { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude_b={amplitude_b}").unwrap();
-                writeln!(file_output, "amplitude_c={amplitude_c}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                writeln!(file_output, "tau_c={tau_c}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude_b={amplitude_b}").unwrap();
+                writeln!(file_output, "- amplitude_c={amplitude_c}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
+                writeln!(file_output, "- tau_c={tau_c}").unwrap();
             }
-            self_ @ DV::SatExp_TwoDecExp_ConstrainedConsts { .. } => {
-                writeln!(file_output, "name: {name}", name=self_.get_name()).unwrap();
-                writeln!(file_output, "{fit_residue_chisq_and_evals_msg}").unwrap();
-                writeln!(file_output, "params:").unwrap();
+            DV::SatExp_TwoDecExp_ConstrainedConsts(..) => {
                 type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
                 let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-                writeln!(file_output, "amplitude_a={amplitude_a}").unwrap();
-                writeln!(file_output, "amplitude_b={amplitude_b}").unwrap();
-                writeln!(file_output, "shift={shift}").unwrap();
-                writeln!(file_output, "tau_a={tau_a}").unwrap();
-                writeln!(file_output, "tau_b={tau_b}").unwrap();
-                writeln!(file_output, "tau_c={tau_c}").unwrap();
-                if let Ok(desmos_function_str) = desmos_function_str {
-                    writeln!(file_output, "{desmos_function_str}").unwrap();
-                }
-                if let Ok(origin_function_str) = origin_function_str {
-                    writeln!(file_output, "{origin_function_str}").unwrap();
-                }
+                writeln!(file_output, "- amplitude_a={amplitude_a}").unwrap();
+                writeln!(file_output, "- amplitude_b={amplitude_b}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
+                writeln!(file_output, "- tau_c={tau_c}").unwrap();
             }
+        }
+        if let Ok(desmos_function_str) = desmos_function_str {
+            writeln!(file_output, "").unwrap();
+            writeln!(file_output, "desmos function:").unwrap();
+            writeln!(file_output, "{desmos_function_str}").unwrap();
+        }
+        if let Ok(origin_function_str) = origin_function_str {
+            writeln!(file_output, "").unwrap();
+            writeln!(file_output, "origin function:").unwrap();
+            writeln!(file_output, "{origin_function_str}").unwrap();
         }
     }
 }

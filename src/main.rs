@@ -30,7 +30,7 @@ mod utils_io;
 
 use config::Config;
 use deconvolution::deconvolution_data::DeconvolutionData;
-use extensions::ToStringUnderscoreSeparated; // TODO: use
+use extensions::{ToStringUnderscoreSeparated, ToStringWithSignificantDigits}; // TODO: use
 use fit_algorithms::Fit;
 use float_type::float;
 use spectrum::Spectrum;
@@ -192,19 +192,27 @@ fn output_results(
     let params = &deconvolution_results.params;
     let significant_digits = config.output_params.significant_digits;
 
-    let chi_squared: float = deconvolution_data.calc_chi_squared(deconvolution_results);
+    let fit_residue_str = deconvolution_results.fit_residue.to_string_with_significant_digits(significant_digits);
+    // let chi_squared = deconvolution_data.calc_chi_squared(deconvolution_results).to_string_with_significant_digits(significant_digits);
+    let reduced_chi_square_str = deconvolution_data.calc_reduced_chi_square(deconvolution_results).to_string_with_significant_digits(significant_digits);
+    let r_square = deconvolution_data.calc_r_square(deconvolution_results).to_string_with_significant_digits(significant_digits);
+    let adjusted_r_square = deconvolution_data.calc_adjusted_r_square(deconvolution_results).to_string_with_significant_digits(significant_digits);
 
     let desmos_function_str = deconvolution_data.deconvolution.to_desmos_function(params, significant_digits);
     if let Ok(ref desmos_function_str) = desmos_function_str {
-        println!("{}", desmos_function_str);
-        println!("\"fit residue: {}", deconvolution_results.fit_residue);
-        println!("\"chi squared: {chi_squared}");
+        println!("desmos function:");
+        println!("{desmos_function_str}");
+        println!("\"fit residue: {fit_residue_str}");
+        println!("\"reduced chi squared: {reduced_chi_square_str}");
+        println!("\"r square: {r_square}");
+        println!("\"adjusted r square: {adjusted_r_square}");
         println!();
     }
 
     let origin_function_str = deconvolution_data.deconvolution.to_origin_function(params, significant_digits);
     if let Ok(ref origin_function_str) = origin_function_str {
-        println!("{}", origin_function_str);
+        println!("origin function:");
+        println!("{origin_function_str}");
     }
 
     // let mut file_output = File::create(filepath_output).unwrap();
@@ -213,17 +221,20 @@ fn output_results(
     // for (x, point) in (1010..=1089).zip(deconvolve_results.points) {
     //     writeln!(file_output, "{x}\t{p}", p=point).unwrap();
     // }
-    let fit_residue_chisq_and_evals_msg = format!(
-        "fit residue {fr:.3} and Chi-squared {chi_squared} achieved in {fre} fit residue function evals",
-        fr=deconvolution_results.fit_residue,
-        fre=deconvolution_results.fit_residue_evals,
-    );
+    let fit_goodness_msg: String = [
+        format!("fit goodness (achieved after {fre} fit residue function evals):", fre=deconvolution_results.fit_residue_evals),
+        format!("- fit residue: {fit_residue_str}"),
+        format!("- reduced chi square: {reduced_chi_square_str}"),
+        format!("- r square: {r_square}"),
+        format!("- adjusted r square: {adjusted_r_square}"),
+    ]
+        .join("\n");
     deconvolution_data.write_result_to_file(
         deconvolution_results,
         filepathstr_output,
         desmos_function_str,
         origin_function_str,
-        &fit_residue_chisq_and_evals_msg,
+        &fit_goodness_msg,
         params,
     );
 
