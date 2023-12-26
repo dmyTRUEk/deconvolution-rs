@@ -342,3 +342,185 @@ impl Load for AlignStepsTo {
     }
 }
 
+
+
+
+
+#[cfg(test)]
+mod deconvolution_data {
+    use crate::{
+        deconvolution::DeconvolutionVariant,
+        spectrum::Spectrum,
+        diff_function::DiffFunction,
+    };
+    use super::super::{
+        deconvolution_data::{AlignStepsTo, DeconvolutionData},
+        types::{
+            ValueAndDomain,
+            per_points::{InitialValues_PerPoint, PerPoint},
+        },
+    };
+    mod align_steps_to_smaller {
+        use super::*;
+        #[test]
+        fn align_i0_4_to_m0_2() {
+            assert_eq!(
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0., 0., 0.4999999999999999, 1., 0.5000000000000001, 0., 0., 0.],
+                        step: 0.2,
+                        x_start: 0.7,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.3,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                },
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.7,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.3,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                }.aligned_steps_to(AlignStepsTo::Smaller)
+            );
+        }
+        #[test]
+        fn align_m0_4_to_i0_2() {
+            assert_eq!(
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.5,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0., 0., 0.4999999999999999, 1., 0.5000000000000007, 0., 0., 0.],
+                        step: 0.2,
+                        x_start: 0.9,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                },
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.5,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.9,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                }.aligned_steps_to(AlignStepsTo::Smaller)
+            );
+        }
+    }
+    mod align_steps_to_bigger {
+        use super::*;
+        #[test]
+        fn align_m0_2_to_i0_4() {
+            assert_eq!(
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.1,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0.2, 0.4, 0.2, 0.],
+                        step: 0.4,
+                        x_start: 0.5,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                },
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.1,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.5,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                }.aligned_steps_to(AlignStepsTo::Bigger)
+            );
+        }
+        #[test]
+        fn align_i0_2_to_m0_4() {
+            assert_eq!(
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0.2, 0.4, 0.2, 0.],
+                        step: 0.4,
+                        x_start: 0.5,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.9,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                },
+                DeconvolutionData {
+                    instrument: Spectrum {
+                        points: vec![0., 0.1, 0.2, 0.3, 0.4, 0.3, 0.2, 0.1, 0.],
+                        step: 0.2,
+                        x_start: 0.5,
+                    },
+                    measured: Spectrum {
+                        points: vec![0., 0., 1., 0., 0.,],
+                        step: 0.4,
+                        x_start: 0.9,
+                    },
+                    deconvolution: DeconvolutionVariant::PerPoint(PerPoint {
+                        diff_function_type: DiffFunction::DySqr,
+                        antispikes: None,
+                        initial_vad: InitialValues_PerPoint::new(9, ValueAndDomain::free(0.)),
+                    }),
+                }.aligned_steps_to(AlignStepsTo::Bigger)
+            );
+        }
+    }
+}
+
