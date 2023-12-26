@@ -5,30 +5,27 @@ use crate::float_type::float;
 
 /// Must be used only in `tests` & `DeconvolutionData::convolve()`.
 pub(super) fn convolve_by_points(
-    points_instrument: &Vec<float>,
-    points_deconvolved: &Vec<float>,
+    instrument: &Vec<float>,
+    deconvolved: &Vec<float>,
 ) -> Vec<float> {
-    let points_instrument_len: usize = points_instrument.len();
-    let points_deconvolved_len: usize = points_deconvolved.len();
-    assert!(points_instrument_len % 2 == 1, "points_instrument_len = {}", points_instrument_len); // why?
-    let points_convolved_len = points_deconvolved_len;
-    let mut points_convolved = vec![0.; points_convolved_len];
-    for i in 0..points_convolved_len {
-        let mut point_convolved = 0.;
-        for j in 0..points_instrument_len {
-            let d: i32 = j as i32 - points_instrument_len as i32 / 2;
-            let pii: i32 = j as i32;     // points_instrument_index
-            let psi: i32 = i as i32 - d; // points_spectrum_index
-            let is_psi_in_range: bool = 0 <= psi && psi < points_deconvolved_len as i32;
-            if is_psi_in_range {
-                let point_instrument  = points_instrument [pii as usize];
-                let point_deconvolved = points_deconvolved[psi as usize];
-                point_convolved += point_instrument * point_deconvolved;
-            }
+    let instrument_len: usize = instrument.len();
+    assert!(instrument_len % 2 == 1, "instrument_len = {}", instrument_len); // why?
+    let ilh = instrument_len / 2;
+    let deconvolved_len: usize = deconvolved.len();
+    let convolved_len = deconvolved_len;
+    let mut convolved = vec![0.; convolved_len];
+    for i in 0_usize..convolved_len {
+        let mut convolved_: float = 0.;
+        // TODO: support case when `insrument` have more points than `deconvolved`.
+        for di in i.saturating_sub(ilh)..(i+ilh+1).min(deconvolved_len) { // deconvolved_index
+            let ii = (i + ilh) - di; // instrument_index
+            let instrument  = instrument [ii];
+            let deconvolved = deconvolved[di];
+            convolved_ += instrument * deconvolved;
         }
-        points_convolved[i] = point_convolved;
+        convolved[i] = convolved_;
     }
-    points_convolved
+    convolved
 }
 
 
