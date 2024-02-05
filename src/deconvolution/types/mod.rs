@@ -22,6 +22,7 @@ use rand::{thread_rng, Rng, rngs::ThreadRng};
 use crate::{
     extensions::SplitAndKeep,
     float_type::float,
+    linalg_types::DVect,
     stacktrace::Stacktrace,
 };
 
@@ -117,6 +118,7 @@ impl ValueAndDomain {
         }
     }
 
+    #[deprecated] // TODO: remove if not needed?
     pub fn get_randomized(&self, initial_values_random_scale: float) -> float {
         self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
     }
@@ -198,17 +200,8 @@ impl ValueAndDomain {
 //     + From<>;
 
 
+// `T` is `float` or `ValueAndDomain`
 pub trait InitialValuesGeneric<T> {
-    /// From vector
-    fn from_vec(params: &Vec<T>) -> Self;
-
-    /// To vector
-    fn to_vec(&self) -> Vec<T>;
-
-    // TODO:
-    // /// From array of ValueAndDomain
-    // fn from_array<const N: usize>(params: [T; N]) -> Self;
-
     /// Number of initial values (don't depend on `self` => static)
     const LEN: usize;
 
@@ -217,11 +210,23 @@ pub trait InitialValuesGeneric<T> {
         Self::LEN
     }
 
+    /// From vector
+    fn from_vec(params: &Vec<T>) -> Self;
+    // fn from_vec_v(params: &DVect) -> Self;
+
+    /// To vector
+    fn to_vec(&self) -> Vec<T>;
+
+    // TODO:
+    // /// From array of ValueAndDomain
+    // fn from_array<const N: usize>(params: [T; N]) -> Self;
+
     /// Convert params to points
     ///
     /// `self` here needed just for `var.params_to_points()` instead of `Type::params_to_points()`,
     /// which prevents from mistakes (accidentaly using wrong type and getting wrong result).
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float>;
+    fn params_to_points_v(&self, params: &DVect, points_len: usize, x_start_end: (float, float)) -> DVect { unimplemented!() } // TODO: remove `unimplemented!` when implemented in all types.
 }
 
 
@@ -235,7 +240,14 @@ where Self: Sized + InitialValuesGeneric<ValueAndDomain>
             .all(|(vad, &value)| vad.contains(value))
     }
 
+    fn is_params_ok_v(&self, params: &DVect) -> bool {
+        self.to_vec().iter()
+            .zip(params)
+            .all(|(vad, &value)| vad.contains(value))
+    }
+
     /// Get randomized initial values
+    #[deprecated] // TODO: remove if not needed?
     fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
         self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
     }
@@ -246,6 +258,14 @@ where Self: Sized + InitialValuesGeneric<ValueAndDomain>
             .iter()
             .map(|vad| vad.get_randomized_with_rng(initial_values_random_scale, rng))
             .collect()
+    }
+
+    fn get_randomized_with_rng_v(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> DVect {
+        let v = self.to_vec();
+        DVect::from_iterator(
+            v.len(),
+            v.iter().map(|vad| vad.get_randomized_with_rng(initial_values_random_scale, rng))
+        )
     }
 }
 

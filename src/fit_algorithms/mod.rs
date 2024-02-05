@@ -1,6 +1,7 @@
 //! Fit Algorithms.
 
 pub mod differential_evolution;
+pub mod differential_evolution_v;
 pub mod pattern_search;
 pub mod pattern_search_adaptive_step;
 pub mod pattern_search_scaled_step;
@@ -18,6 +19,7 @@ use crate::{
 
 use self::{
     differential_evolution::DifferentialEvolution,
+    differential_evolution_v::DifferentialEvolutionV,
     pattern_search::PatternSearch,
     pattern_search_adaptive_step::PatternSearchAdaptiveStep,
     pattern_search_scaled_step::PatternSearchScaledStep,
@@ -40,6 +42,7 @@ pub type FitResult = Result<Fit, &'static str>;
 #[derive(Debug, Clone, PartialEq)]
 pub enum FitAlgorithmVariant {
     DifferentialEvolution(DifferentialEvolution),
+    DifferentialEvolutionV(DifferentialEvolutionV),
     PatternSearch(PatternSearch),
     PatternSearchScaledStep(PatternSearchScaledStep),
     PatternSearchAdaptiveStep(PatternSearchAdaptiveStep),
@@ -49,6 +52,7 @@ impl FitAlgorithmVariant {
     pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Vec<float>) -> FitResult {
         match self {
             Self::DifferentialEvolution(de)       => de.fit(deconvolution_data),
+            Self::DifferentialEvolutionV(dev)     => dev.fit(deconvolution_data),
             Self::PatternSearch(ps)               => ps.fit(deconvolution_data, initial_params),
             Self::PatternSearchScaledStep(psss)   => psss.fit(deconvolution_data, initial_params),
             Self::PatternSearchAdaptiveStep(psas) => psas.fit(deconvolution_data, initial_params),
@@ -59,8 +63,9 @@ impl FitAlgorithmVariant {
 impl Load for FitAlgorithmVariant {
     const TOML_NAME: &'static str = "fit_algorithm";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        const FIT_ALGORITHMS_NAMES: [&'static str; 4] = [
+        const FIT_ALGORITHMS_NAMES: [&'static str; 5] = [
             DifferentialEvolution::TOML_NAME,
+            DifferentialEvolutionV::TOML_NAME,
             PatternSearch::TOML_NAME,
             PatternSearchScaledStep::TOML_NAME,
             PatternSearchAdaptiveStep::TOML_NAME,
@@ -93,9 +98,10 @@ impl Load for FitAlgorithmVariant {
         // - maybe create vec of [PerPoint, Exponents, ...] and try load by them?
         match fit_algorithm_index {
             0 => Self::DifferentialEvolution(DifferentialEvolution::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            1 => Self::PatternSearch(PatternSearch::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            2 => Self::PatternSearchScaledStep(PatternSearchScaledStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            3 => Self::PatternSearchAdaptiveStep(PatternSearchAdaptiveStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            1 => Self::DifferentialEvolutionV(DifferentialEvolutionV::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            2 => Self::PatternSearch(PatternSearch::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            3 => Self::PatternSearchScaledStep(PatternSearchScaledStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            4 => Self::PatternSearchAdaptiveStep(PatternSearchAdaptiveStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }

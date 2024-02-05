@@ -87,7 +87,8 @@ significant_digits = 4
 # alpha = 1.1     # step increase coefficient
 # # beta = 0.9    # step decrease coefficient, default = 1/alpha
 
-[fit_algorithm.differential_evolution]
+# [fit_algorithm.differential_evolution]
+[fit_algorithm.differential_evolution_v]
 initial_values_random_scale = 10.0
 generations = 1_000
 population  = 100

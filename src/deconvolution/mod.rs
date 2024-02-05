@@ -13,6 +13,7 @@ use toml::Value as TomlValue;
 
 use crate::{
     float_type::float,
+    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
 };
@@ -111,6 +112,25 @@ impl DeconvolutionVariant {
         }
     }
 
+    pub fn get_initial_values_randomized_v(&self, initial_values_random_scale: float) -> DVect {
+        let mut rng = thread_rng();
+        self.get_initial_values_randomized_with_rng_v(initial_values_random_scale, &mut rng)
+    }
+
+    pub fn get_initial_values_randomized_with_rng_v(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> DVect {
+        match self {
+            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+        }
+    }
+
     pub fn is_params_ok(&self, params: &Vec<float>) -> bool {
         match self {
             Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok(params),
@@ -125,6 +145,21 @@ impl DeconvolutionVariant {
         }
     }
 
+    pub fn is_params_ok_v(&self, params: &DVect) -> bool {
+        match self {
+            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok_v(params),
+            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+        }
+    }
+
+    // #[inline(never)]
     pub fn params_to_points(
         &self,
         params: &Vec<float>,
@@ -133,7 +168,6 @@ impl DeconvolutionVariant {
     ) -> Vec<float> {
         assert!(points_len > 1);
         assert!(x_start_end.0 < x_start_end.1);
-
         match self {
             Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.params_to_points(params, points_len, x_start_end),
             Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
@@ -147,6 +181,29 @@ impl DeconvolutionVariant {
         }
     }
 
+    // #[inline(never)]
+    pub fn params_to_points_v(
+        &self,
+        params: &DVect,
+        points_len: usize,
+        x_start_end: (float, float),
+    ) -> DVect {
+        assert!(points_len > 1);
+        assert!(x_start_end.0 < x_start_end.1);
+        match self {
+            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.params_to_points_v(params, points_len, x_start_end),
+            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts{ initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+        }
+    }
+
+    // #[inline(never)]
     pub fn calc_residue_function(&self, points_measured: &Vec<float>, points_convolved: &Vec<float>) -> float {
         match self {
             Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
@@ -162,6 +219,26 @@ impl DeconvolutionVariant {
             | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
             => {
                 diff_function_type.calc_diff(points_measured, points_convolved)
+            }
+        }
+    }
+
+    // #[inline(never)]
+    pub fn calc_residue_function_v(&self, points_measured: &DVect, points_convolved: DVect) -> float {
+        match self {
+            Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
+                diff_function_type.calc_diff_with_antispikes_v(points_measured, points_convolved, antispikes)
+            }
+            Self::Exponents(Exponents { diff_function_type, .. })
+            | Self::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp(SatExp_TwoDecExp { diff_function_type, .. })
+            | Self::Two_SatExp_DecExp(Two_SatExp_DecExp { diff_function_type, .. })
+            | Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
+            | Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
+            | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
+            => {
+                diff_function_type.calc_diff_v(points_measured, points_convolved)
             }
         }
     }

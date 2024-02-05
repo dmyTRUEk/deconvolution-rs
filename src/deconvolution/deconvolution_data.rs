@@ -7,6 +7,7 @@ use toml::Value as TomlValue;
 use crate::{
     fit_algorithms::{Fit, FitAlgorithmVariant, FitResult},
     float_type::float,
+    linalg_types::DVect,
     load::Load,
     spectrum::Spectrum,
     stacktrace::Stacktrace,
@@ -14,7 +15,7 @@ use crate::{
 
 use super::{
     DeconvolutionVariant,
-    convolution::convolve_by_points,
+    convolution::{convolve_by_points, convolve_by_points_v},
     types::{
         InitialValuesGeneric,
         sat_exp__dec_exp::InitialValues_SatExp_DecExp,
@@ -94,6 +95,7 @@ impl DeconvolutionData {
         self
     }
 
+    // #[inline(never)]
     pub fn deconvolve(
         &self,
         fit_algorithm: &FitAlgorithmVariant,
@@ -113,38 +115,74 @@ impl DeconvolutionData {
     /// - Exponents: list of (amplitude, shift, tau),
     /// - SatExp_DecExp: amplitude, shift, tau_a, tau_b,
     /// for other look in [`Deconvolution`].
+    // #[inline(never)]
     pub fn calc_residue_function(&self, params: &Vec<float>) -> float {
         let points_convolved: Vec<float> = self.convolve_from_params(params);
         assert_eq!(self.get_params_amount(), params.len());
         self.deconvolution.calc_residue_function(&self.measured.points, &points_convolved)
     }
 
+    // #[inline(never)]
+    pub fn calc_residue_function_v(&self, params: &DVect, instrument: &DVect, measured: &DVect) -> float {
+        let points_convolved: DVect = self.convolve_from_params_v(params, instrument);
+        assert_eq!(self.get_params_amount(), params.len());
+        self.deconvolution.calc_residue_function_v(measured, points_convolved)
+    }
+
+    // #[inline(never)]
     pub fn get_params_amount(&self) -> usize {
         self.deconvolution.get_initial_values_len(/*self.measured.points.len()*/)
     }
 
+    // #[inline(never)]
     pub fn get_initial_params(&self) -> Vec<float> {
         let initial_params: Vec<float> = self.deconvolution.get_initial_values();
         assert_eq!(self.deconvolution.get_initial_values_len(), initial_params.len());
         initial_params
     }
 
+    // #[inline(never)]
     pub fn is_params_ok(&self, params: &Vec<float>) -> bool {
         self.deconvolution.is_params_ok(params)
     }
 
+    // #[inline(never)]
+    pub fn is_params_ok_v(&self, params: &DVect) -> bool {
+        self.deconvolution.is_params_ok_v(params)
+    }
+
+    // #[inline(never)]
     pub fn convolve_from_params(&self, params: &Vec<float>) -> Vec<float> {
         // convert `params` into `points` ("deconvolved"):
         let points_deconvolved: Vec<float> = self.deconvolution.params_to_points(
-            &params,
+            params,
             self.measured.points.len(),
             (self.measured.x_start, self.measured.get_x_end())
         );
         self.convolve_from_points(&points_deconvolved)
     }
 
+    // #[inline(never)]
+    pub fn convolve_from_params_v(&self, params: &DVect, instrument: &DVect) -> DVect {
+        // convert `params` into `points` ("deconvolved"):
+        let points_deconvolved: DVect = self.deconvolution.params_to_points_v(
+            params,
+            self.measured.points.len(),
+            (self.measured.x_start, self.measured.get_x_end())
+        );
+        self.convolve_from_points_v(points_deconvolved, instrument)
+    }
+
+    // #[inline(never)]
     pub fn convolve_from_points(&self, points_deconvolved: &Vec<float>) -> Vec<float> {
-        let points_convolved: Vec<float> = convolve_by_points(&self.instrument.points, &points_deconvolved);
+        let points_convolved: Vec<float> = convolve_by_points(&self.instrument.points, points_deconvolved);
+        assert_eq!(self.measured.points.len(), points_convolved.len());
+        points_convolved
+    }
+
+    // #[inline(never)]
+    pub fn convolve_from_points_v(&self, points_deconvolved: DVect, instrument: &DVect) -> DVect {
+        let points_convolved: DVect = convolve_by_points_v(instrument, points_deconvolved);
         assert_eq!(self.measured.points.len(), points_convolved.len());
         points_convolved
     }

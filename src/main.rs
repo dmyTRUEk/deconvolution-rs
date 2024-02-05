@@ -22,6 +22,7 @@ mod exponent_function;
 mod extensions;
 mod fit_algorithms;
 mod float_type;
+mod linalg_types;
 mod load;
 mod macros;
 mod spectrum;
@@ -37,6 +38,7 @@ use spectrum::Spectrum;
 use utils_io::flush;
 
 
+// TODO: make `-> Result<(), TODO>`.
 fn main() {
     let config = Config::load_from_default_file();
 

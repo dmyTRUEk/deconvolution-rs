@@ -7,6 +7,7 @@ use toml::Value as TomlValue;
 use crate::{
     antispikes::Antispikes,
     float_type::float,
+    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
 };
@@ -23,6 +24,8 @@ pub enum DiffFunction {
 }
 
 impl DiffFunction {
+    // TODO(optimize)?
+    // #[inline(never)]
     pub fn calc_diff(&self, points_1: &Vec<float>, points_2: &Vec<float>) -> float {
         assert_eq!(points_1.len(), points_2.len());
         match self {
@@ -30,8 +33,8 @@ impl DiffFunction {
                 let mut res: float = 0.;
                 for (point_1, point_2) in points_1.into_iter().zip(points_2) {
                     let delta = point_2 - point_1;
-                    let delta = delta.powi(2); // TODO(refactor): rename var
-                    res += delta;
+                    let delta_sq = delta.powi(2);
+                    res += delta_sq;
                 }
                 res.sqrt()
             }
@@ -39,13 +42,35 @@ impl DiffFunction {
                 let mut res: float = 0.;
                 for (point_1, point_2) in points_1.into_iter().zip(points_2) {
                     let delta = point_2 - point_1;
-                    let delta = delta.abs(); // TODO(refactor): rename var
-                    res += delta;
+                    let delta_abs = delta.abs();
+                    res += delta_abs;
                 }
                 res
             }
-            Self::DySqrPerEl => Self::DySqr.calc_diff(points_1, points_2) / points_1.len() as float,
-            Self::DyAbsPerEl => Self::DyAbs.calc_diff(points_1, points_2) / points_1.len() as float,
+            Self::DySqrPerEl => Self::DySqr.calc_diff(points_1, points_2) / (points_1.len() as float),
+            Self::DyAbsPerEl => Self::DyAbs.calc_diff(points_1, points_2) / (points_1.len() as float),
+            Self::LeastDist => { unimplemented!() }
+        }
+    }
+
+    // #[inline(never)]
+    pub fn calc_diff_v(&self, points_1: &DVect, points_2: DVect) -> float {
+        assert_eq!(points_1.len(), points_2.len());
+        match self {
+            Self::DySqr => {
+                let delta: DVect = points_2 - points_1;
+                let delta_sq: DVect = delta.map(|v| v.powi(2));
+                let res = delta_sq.sum();
+                res.sqrt()
+            }
+            Self::DyAbs => {
+                let delta: DVect = points_2 - points_1;
+                let delta_abs: DVect = delta.map(|v| v.abs());
+                let res = delta_abs.sum();
+                res
+            }
+            Self::DySqrPerEl => Self::DySqr.calc_diff_v(points_1, points_2) / (points_1.len() as float),
+            Self::DyAbsPerEl => Self::DyAbs.calc_diff_v(points_1, points_2) / (points_1.len() as float),
             Self::LeastDist => { unimplemented!() }
         }
     }
@@ -57,6 +82,10 @@ impl DiffFunction {
             |antispikes| antispikes.calc(points_1, points_2)
         );
         diff_main + diff_antispikes
+    }
+
+    pub fn calc_diff_with_antispikes_v(&self, points_1: &DVect, points_2: DVect, antispikes: &Option<Antispikes>) -> float {
+        todo!()
     }
 }
 

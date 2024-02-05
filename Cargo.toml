@@ -29,6 +29,7 @@ panic = "abort"
 # rustflags = ["-Clink-arg=-fuse-ld=lld", "-Clink-arg=-Wl,--no-rosegment"]
 
 [dependencies]
+nalgebra = "0.32.3"
 rand = "0.8.5"
 rayon = "1.8.0"
 toml = "0.8.8"

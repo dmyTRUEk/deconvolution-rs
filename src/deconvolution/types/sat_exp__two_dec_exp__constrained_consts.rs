@@ -9,6 +9,7 @@ use crate::{
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
     float_type::float,
+    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
     utils_io::format_by_dollar_str,
@@ -74,9 +75,29 @@ pub struct InitialValues_SatExp_TwoDecExp_ConstrainedConsts<T> {
     pub tau_c: T,
 }
 
+impl InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float> {
+    // #[inline(never)]
+    fn from_vec_vf(params: &DVect) -> Self {
+        // TODO(optimize)?
+        match params.as_slice()[..] {
+            [amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c] => Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
+            _ => unreachable!()
+        }
+        // Self {
+        //     amplitude_a: params[0],
+        //     amplitude_b: params[1],
+        //     shift: params[2],
+        //     tau_a: params[3],
+        //     tau_b: params[4],
+        //     tau_c: params[5],
+        // }
+    }
+}
+
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_ConstrainedConsts<T> {
     const LEN: usize = 6;
 
+    // #[inline(never)]
     fn from_vec(params: &Vec<T>) -> Self {
         match params[..] {
             [amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c] => Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
@@ -84,20 +105,40 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_Constra
         }
     }
 
+    // #[inline(never)]
     fn to_vec(&self) -> Vec<T> {
         let Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = *self;
         vec![amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c]
     }
 
+    // #[inline(never)]
     fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
         type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
         let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-        let mut points = Vec::<float>::with_capacity(points_len);
+        // TODO(optimization): fill by zeros and use index instead of push
+        let mut points: Vec<float> = Vec::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
             let x_m_shift: float = x - shift;
             let y = amplitude_a * (1. - exp(-x_m_shift/tau_a)) * (amplitude_b*exp(-x_m_shift/tau_b) + (1.-amplitude_b)*exp(-x_m_shift/tau_c));
             points.push(y.max(0.));
+        }
+        points
+    }
+
+    // #[inline(never)]
+    fn params_to_points_v(&self, params: &DVect, points_len: usize, x_start_end: (float, float)) -> DVect {
+        type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
+        // TODO(optimize)?: use `from_vec_v`.
+        // let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(&params.data.as_vec());
+        let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec_vf(params);
+        // TODO(optimization)?: use `from_fn`.
+        let mut points: DVect = DVect::zeros(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift: float = x - shift;
+            let y = amplitude_a * (1. - exp(-x_m_shift/tau_a)) * (amplitude_b*exp(-x_m_shift/tau_b) + (1.-amplitude_b)*exp(-x_m_shift/tau_c));
+            points[i] = y.max(0.);
         }
         points
     }

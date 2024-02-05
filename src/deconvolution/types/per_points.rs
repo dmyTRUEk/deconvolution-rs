@@ -6,11 +6,12 @@ use crate::{
     antispikes::Antispikes,
     diff_function::DiffFunction,
     float_type::float,
+    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
 };
 
-use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
+use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain};
 
 
 /// [y0, y1, y2, …]
@@ -76,6 +77,10 @@ impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoi
 
     fn params_to_points(&self, params: &Vec<float>, _points_len: usize, _x_start_end: (float, float)) -> Vec<float> {
         params.to_vec()
+    }
+
+    fn params_to_points_v(&self, params: &DVect, points_len: usize, x_start_end: (float, float)) -> DVect {
+        params.clone()
     }
 }
 
