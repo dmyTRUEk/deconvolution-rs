@@ -12,10 +12,12 @@ use rand::{rngs::ThreadRng, thread_rng};
 use toml::Value as TomlValue;
 
 use crate::{
-    float_type::float,
-    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
+    types::{
+        float::float,
+        named_wrappers::{ConvolvedV, DeconvolvedV, MeasuredV, Params, ParamsG, ParamsV},
+    },
 };
 
 use self::types::{
@@ -35,7 +37,7 @@ use self::types::{
 
 
 /// Deconvolution type and it's corresponding params.
-#[allow(dead_code, non_camel_case_types)]
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum DeconvolutionVariant {
     PerPoint(PerPoint),
@@ -79,9 +81,9 @@ impl DeconvolutionVariant {
         }
     }
 
-    pub fn get_initial_values(&self) -> Vec<float> {
+    pub fn get_initial_values(&self) -> Params {
         match self {
-            Self::PerPoint(PerPoint { initial_vad, .. }) => vec![initial_vad.vad.value; initial_vad.len],
+            Self::PerPoint(PerPoint { initial_vad, .. }) => ParamsG::<float>(vec![initial_vad.vad.value; initial_vad.len]),
             Self::Exponents(Exponents { initial_vads, .. }) => InitialValues_Exponents::<float>::from(initial_vads.clone()).to_vec(),
             Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => InitialValues_SatExp_DecExp::<float>::from(*initial_vads).to_vec(),
             Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => InitialValues_SatExp_TwoDecExp::<float>::from(*initial_vads).to_vec(),
@@ -93,31 +95,31 @@ impl DeconvolutionVariant {
         }
     }
 
-    pub fn get_initial_values_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
-        let mut rng = thread_rng();
-        self.get_initial_values_randomized_with_rng(initial_values_random_scale, &mut rng)
-    }
+    // pub fn get_initial_values_randomized(&self, initial_values_random_scale: float) -> Params {
+    //     let mut rng = thread_rng();
+    //     self.get_initial_values_randomized_with_rng(initial_values_random_scale, &mut rng)
+    // }
 
-    pub fn get_initial_values_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> Vec<float> {
-        match self {
-            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-        }
-    }
+    // pub fn get_initial_values_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> Params {
+    //     match self {
+    //         Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //         Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
+    //     }
+    // }
 
-    pub fn get_initial_values_randomized_v(&self, initial_values_random_scale: float) -> DVect {
+    pub fn get_initial_values_randomized_v(&self, initial_values_random_scale: float) -> ParamsV {
         let mut rng = thread_rng();
         self.get_initial_values_randomized_with_rng_v(initial_values_random_scale, &mut rng)
     }
 
-    pub fn get_initial_values_randomized_with_rng_v(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> DVect {
+    pub fn get_initial_values_randomized_with_rng_v(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> ParamsV {
         match self {
             Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng_v(initial_values_random_scale, rng),
             Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
@@ -131,21 +133,21 @@ impl DeconvolutionVariant {
         }
     }
 
-    pub fn is_params_ok(&self, params: &Vec<float>) -> bool {
-        match self {
-            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok(params),
-            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
-            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
-        }
-    }
+    // pub fn is_params_ok(&self, params: &Params) -> bool {
+    //     match self {
+    //         Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok(params),
+    //         Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //         Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok(params),
+    //     }
+    // }
 
-    pub fn is_params_ok_v(&self, params: &DVect) -> bool {
+    pub fn is_params_ok_v(&self, params: &ParamsV) -> bool {
         match self {
             Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.is_params_ok_v(params),
             Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
@@ -159,35 +161,33 @@ impl DeconvolutionVariant {
         }
     }
 
-    // #[inline(never)]
-    pub fn params_to_points(
-        &self,
-        params: &Vec<float>,
-        points_len: usize,
-        x_start_end: (float, float),
-    ) -> Vec<float> {
-        assert!(points_len > 1);
-        assert!(x_start_end.0 < x_start_end.1);
-        match self {
-            Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.params_to_points(params, points_len, x_start_end),
-            Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts{ initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
-        }
-    }
+    // pub fn params_to_points(
+    //     &self,
+    //     params: &Params,
+    //     points_len: usize,
+    //     x_start_end: (float, float),
+    // ) -> Deconvolved {
+    //     assert!(points_len > 1);
+    //     assert!(x_start_end.0 < x_start_end.1);
+    //     match self {
+    //         Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.params_to_points(params, points_len, x_start_end),
+    //         Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //         Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts{ initial_vads, .. }) => initial_vads.params_to_points(params, points_len, x_start_end),
+    //     }
+    // }
 
-    // #[inline(never)]
     pub fn params_to_points_v(
         &self,
-        params: &DVect,
+        params: &ParamsV,
         points_len: usize,
         x_start_end: (float, float),
-    ) -> DVect {
+    ) -> DeconvolvedV {
         assert!(points_len > 1);
         assert!(x_start_end.0 < x_start_end.1);
         match self {
@@ -203,31 +203,29 @@ impl DeconvolutionVariant {
         }
     }
 
-    // #[inline(never)]
-    pub fn calc_residue_function(&self, points_measured: &Vec<float>, points_convolved: &Vec<float>) -> float {
-        match self {
-            Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
-                diff_function_type.calc_diff_with_antispikes(points_measured, points_convolved, antispikes)
-            }
-            Self::Exponents(Exponents { diff_function_type, .. })
-            | Self::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
-            | Self::SatExp_TwoDecExp(SatExp_TwoDecExp { diff_function_type, .. })
-            | Self::Two_SatExp_DecExp(Two_SatExp_DecExp { diff_function_type, .. })
-            | Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
-            | Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
-            | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
-            | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
-            => {
-                diff_function_type.calc_diff(points_measured, points_convolved)
-            }
-        }
-    }
+    // pub fn calc_residue_function(&self, points_measured: &Measured, points_convolved: Convolved) -> float {
+    //     match self {
+    //         Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
+    //             diff_function_type.calc_diff_with_antispikes(&points_measured.0, points_convolved.0, antispikes)
+    //         }
+    //         Self::Exponents(Exponents { diff_function_type, .. })
+    //         | Self::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
+    //         | Self::SatExp_TwoDecExp(SatExp_TwoDecExp { diff_function_type, .. })
+    //         | Self::Two_SatExp_DecExp(Two_SatExp_DecExp { diff_function_type, .. })
+    //         | Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { diff_function_type, .. })
+    //         | Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
+    //         | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
+    //         | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
+    //         => {
+    //             diff_function_type.calc_diff(&points_measured.0, &points_convolved.0)
+    //         }
+    //     }
+    // }
 
-    // #[inline(never)]
-    pub fn calc_residue_function_v(&self, points_measured: &DVect, points_convolved: DVect) -> float {
+    pub fn calc_residue_function_v(&self, points_measured: &MeasuredV, points_convolved: ConvolvedV) -> float {
         match self {
             Self::PerPoint(PerPoint { diff_function_type, antispikes, .. }) => {
-                diff_function_type.calc_diff_with_antispikes_v(points_measured, points_convolved, antispikes)
+                diff_function_type.calc_diff_with_antispikes_v(&points_measured.0, &points_convolved.0, antispikes)
             }
             Self::Exponents(Exponents { diff_function_type, .. })
             | Self::SatExp_DecExp(SatExp_DecExp { diff_function_type, .. })
@@ -238,13 +236,13 @@ impl DeconvolutionVariant {
             | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
             | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
             => {
-                diff_function_type.calc_diff_v(points_measured, points_convolved)
+                diff_function_type.calc_diff_v(&points_measured.0, &points_convolved.0)
             }
         }
     }
 
     // TODO: tests, check if they work in desmos
-    pub fn to_desmos_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
+    pub fn to_desmos_function(&self, params: &Params, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
         Ok(format!("y=") + &match self {
             Self::PerPoint(_) => { return Err("not plottable") },
@@ -260,7 +258,7 @@ impl DeconvolutionVariant {
     }
 
     // TODO: tests, check if they work in origin
-    pub fn to_origin_function(&self, params: &Vec<float>, significant_digits: u8) -> Result<String, &'static str> {
+    pub fn to_origin_function(&self, params: &Params, significant_digits: u8) -> Result<String, &'static str> {
         let sd = significant_digits;
         Ok(match self {
             Self::PerPoint(_) => { return Err("not plottable") },
@@ -395,7 +393,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 10], vec![1.], vec![0.; 10]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -408,7 +406,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 20]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -421,7 +419,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 20], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -438,7 +436,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 6], vec![1.], vec![0.; 6], vec![1.], vec![0.; 6]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -451,7 +449,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 6], vec![1.], vec![0.; 12]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -464,7 +462,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 12], vec![1.], vec![0.; 6], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -485,7 +483,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 10], vec![1.], vec![0.; 10]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -498,7 +496,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 20]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -511,7 +509,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 20], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -528,7 +526,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 6], vec![1.], vec![0.; 6], vec![1.], vec![0.; 6]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -541,7 +539,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 6], vec![1.], vec![0.; 12]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -554,7 +552,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 12], vec![1.], vec![0.; 6], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -575,7 +573,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 10], vec![1.], vec![0.; 10]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -588,7 +586,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 20]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -601,7 +599,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 20], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -618,7 +616,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 6], vec![1.], vec![0.; 6], vec![1.], vec![0.; 6]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -631,7 +629,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1.], vec![0.; 6], vec![1.], vec![0.; 12]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -644,7 +642,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 12], vec![1.], vec![0.; 6], vec![1.]].concat();
                     let points_deconvolved_expected = points_spectrum_convolved.clone();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -665,7 +663,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 9], vec![0.5, 1., 0.5], vec![0.; 9]].concat();
                     let points_deconvolved_expected = [vec![0.; 10], vec![1.], vec![0.; 10]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -678,7 +676,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1., 0.5], vec![0.; 19]].concat();
                     let points_deconvolved_expected = [vec![1.], vec![0.; 20]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -691,7 +689,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 19], vec![0.5, 1.]].concat();
                     let points_deconvolved_expected = [vec![0.; 20], vec![1.]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -708,7 +706,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 5], vec![0.5, 1., 0.5], vec![0.; 4], vec![0.5, 1., 0.5], vec![0.; 5]].concat();
                     let points_deconvolved_expected = [vec![0.; 6], vec![1.], vec![0.; 6], vec![1.], vec![0.; 6]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -721,7 +719,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![1., 0.5], vec![0.; 4], vec![0.5, 1., 0.5], vec![0.; 11]].concat();
                     let points_deconvolved_expected = [vec![1.], vec![0.; 6], vec![1.], vec![0.; 12]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);
@@ -734,7 +732,7 @@ mod deconvolve {
                     let points_spectrum_convolved = [vec![0.; 11], vec![0.5, 1., 0.5], vec![0.; 4], vec![0.5, 1.]].concat();
                     let points_deconvolved_expected = [vec![0.; 12], vec![1.], vec![0.; 6], vec![1.]].concat();
                     let deconvolve_results = deconvolve(POINTS_INSTRUMENT.to_vec(), points_spectrum_convolved).unwrap();
-                    let points_deconvolved_actual = deconvolve_results.params;
+                    let points_deconvolved_actual = deconvolve_results.params.0;
                     println!("fit_residue_evals = {}", deconvolve_results.fit_residue_evals);
                     println!("points_deconvolved_expected = {:?}", points_deconvolved_expected);
                     println!("points_deconvolved_actual = {:?}", points_deconvolved_actual);

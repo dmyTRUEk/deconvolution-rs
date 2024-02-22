@@ -6,10 +6,9 @@ use toml::Value as TomlValue;
 
 use crate::{
     antispikes::Antispikes,
-    float_type::float,
-    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, linalg::DVect},
 };
 
 
@@ -25,7 +24,6 @@ pub enum DiffFunction {
 
 impl DiffFunction {
     // TODO(optimize)?
-    // #[inline(never)]
     pub fn calc_diff(&self, points_1: &Vec<float>, points_2: &Vec<float>) -> float {
         assert_eq!(points_1.len(), points_2.len());
         match self {
@@ -53,8 +51,7 @@ impl DiffFunction {
         }
     }
 
-    // #[inline(never)]
-    pub fn calc_diff_v(&self, points_1: &DVect, points_2: DVect) -> float {
+    pub fn calc_diff_v(&self, points_1: &DVect, points_2: &DVect) -> float {
         assert_eq!(points_1.len(), points_2.len());
         match self {
             Self::DySqr => {
@@ -76,16 +73,21 @@ impl DiffFunction {
     }
 
     pub fn calc_diff_with_antispikes(&self, points_1: &Vec<float>, points_2: &Vec<float>, antispikes: &Option<Antispikes>) -> float {
-        let diff_main: float = self.calc_diff(points_1, points_2);
+        let diff_main: float = self.calc_diff(points_1, &points_2);
         let diff_antispikes: float = antispikes.as_ref().map_or(
             0.,
-            |antispikes| antispikes.calc(points_1, points_2)
+            |antispikes| antispikes.calc(points_1, &points_2)
         );
         diff_main + diff_antispikes
     }
 
-    pub fn calc_diff_with_antispikes_v(&self, points_1: &DVect, points_2: DVect, antispikes: &Option<Antispikes>) -> float {
-        todo!()
+    pub fn calc_diff_with_antispikes_v(&self, points_1: &DVect, points_2: &DVect, antispikes: &Option<Antispikes>) -> float {
+        let diff_main: float = self.calc_diff_v(points_1, points_2);
+        let diff_antispikes: float = antispikes.as_ref().map_or(
+            0.,
+            |antispikes| antispikes.calc(points_1.data.as_vec(), points_2.data.as_vec())
+        );
+        diff_main + diff_antispikes
     }
 }
 

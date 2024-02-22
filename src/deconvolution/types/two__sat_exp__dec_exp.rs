@@ -8,9 +8,9 @@ use crate::{
     aliases_method_to_function::exp,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -39,7 +39,7 @@ impl DeconvolutionType for Two_SatExp_DecExp {
         r"max(0,$a2*(1-exp(-(x$pm2$s2)/($ta2)))*exp(-(x$pm2$s2)/($tb2)))",
     );
 
-    fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
+    fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {
         let values = InitialValues_Two_SatExp_DecExp::from_vec(params);
         let sd = significant_digits;
         format_by_dollar_str(
@@ -89,8 +89,8 @@ pub struct InitialValues_Two_SatExp_DecExp<T> {
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
     const LEN: usize = 8;
 
-    fn from_vec(params: &Vec<T>) -> Self {
-        match params[..] {
+    fn from_vec(params: &ParamsG<T>) -> Self {
+        match params.0[..] {
             [
                 amplitude_1, shift_1, tau_a1, tau_b1,
                 amplitude_2, shift_2, tau_a2, tau_b2,
@@ -102,12 +102,12 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
         }
     }
 
-    fn to_vec(&self) -> Vec<T> {
+    fn to_vec(&self) -> ParamsG<T> {
         let Self { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = *self;
-        vec![amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2]
+        ParamsG::<T>(vec![amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2])
     }
 
-    fn params_to_points(&self, params: &Vec<float>, points_len: usize, x_start_end: (float, float)) -> Vec<float> {
+    fn params_to_points(&self, params: &Params, points_len: usize, x_start_end: (float, float)) -> Deconvolved {
         type SelfF = InitialValues_Two_SatExp_DecExp<float>;
         let SelfF { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = SelfF::from_vec(params);
         let mut points = Vec::<float>::with_capacity(points_len);
@@ -119,7 +119,11 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
             let y2 = amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2);
             points.push(y1.max(0.) + y2.max(0.));
         }
-        points
+        Deconvolved(points)
+    }
+
+    fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
+        todo!()
     }
 }
 
@@ -127,7 +131,7 @@ impl InitialValuesVAD for InitialValues_Two_SatExp_DecExp<ValueAndDomain> {}
 
 impl From<InitialValues_Two_SatExp_DecExp<ValueAndDomain>> for InitialValues_Two_SatExp_DecExp<float> {
     fn from(value: InitialValues_Two_SatExp_DecExp<ValueAndDomain>) -> Self {
-        Self::from_vec(&value.to_vec().iter().map(|v| v.value).collect())
+        Self::from_vec(&ParamsG::<float>(value.to_vec().0.iter().map(|v| v.value).collect::<Vec<float>>()))
     }
 }
 

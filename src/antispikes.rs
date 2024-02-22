@@ -3,9 +3,9 @@
 use toml::Value as TomlValue;
 
 use crate::{
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::float::float,
 };
 
 

@@ -6,9 +6,9 @@ use toml::Value as TomlValue;
 use crate::{
     deconvolution::deconvolution_data::DeconvolutionData,
     extensions::IndexOfMinWithCeil,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::{Instrument, InstrumentRevV, Measured, MeasuredV, ParamsG, ParamsV}},
     utils_io::press_enter_to_continue,
 };
 
@@ -27,24 +27,26 @@ pub struct PatternSearchAdaptiveStep {
 }
 
 impl PatternSearchAdaptiveStep {
-    pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Vec<float>) -> FitResult {
+    pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: ParamsV) -> FitResult {
         const DEBUG: bool = false;
 
         let Self { fit_algorithm_min_step, fit_residue_evals_max, initial_step, alpha, beta } = *self;
         let beta = beta.unwrap_or(1. / alpha);
 
-        let f_params_amount: usize = initial_params.len();
+        let f_params_amount: usize = initial_params.0.len();
         if f_params_amount == 0 {
             return Err("too few params");
             // return None;
         }
 
-        type Params = Vec<float>;
-        let mut params: Params = initial_params;
+        let instrument_v_rev: InstrumentRevV = Instrument(deconvolution_data.instrument.points.clone()).into();
+        let measured_v: MeasuredV = Measured(deconvolution_data.measured.points.clone()).into();
+
+        let mut params: ParamsV = initial_params;
         let mut step: float = initial_step;
         let mut fit_residue_evals: u64 = 0;
 
-        let mut res_at_current_params: float = deconvolution_data.calc_residue_function(&params);
+        let mut res_at_current_params: float = deconvolution_data.calc_residue_function_v(&params, &instrument_v_rev, &measured_v);
         fit_residue_evals += 1;
         if DEBUG { println!("res_at_current_params = {}", res_at_current_params) }
         if !res_at_current_params.is_finite() { return Err("`res_at_current_params` isn't finite") }
@@ -63,16 +65,16 @@ impl PatternSearchAdaptiveStep {
                 .into_par_iter()
                 .map(|i| -> (u64, float) {
                     let delta = if i % 2 == 0 { -step } else { step };
-                    let delta = params[i/2] * delta;
-                    let param_new = params[i/2] + delta;
+                    let delta = params.0[i/2] * delta;
+                    let param_new = params.0[i/2] + delta;
                     // if !param_new.is_finite() { return Err("`param.value + delta` isn't finite") }
                     // TODO(optimization)?: remove `.is_finite()` check, bc it already will be "done" when calculating residue function.
                     let mut params_new = params.clone();
-                    params_new[i/2] = param_new;
-                    if !deconvolution_data.is_params_ok(&params_new) || !param_new.is_finite() {
+                    params_new.0[i/2] = param_new;
+                    if !deconvolution_data.is_params_ok_v(&params_new) || !param_new.is_finite() {
                         (0, float::NAN)
                     } else {
-                        let residue = deconvolution_data.calc_residue_function(&params_new);
+                        let residue = deconvolution_data.calc_residue_function_v(&params_new, &instrument_v_rev, &measured_v);
                         (1, if residue.is_finite() { residue } else { float::NAN })
                     }
                     // returns tuple of `residue_function_evals` and `residue_result`.
@@ -89,8 +91,8 @@ impl PatternSearchAdaptiveStep {
                     if DEBUG { println!("INCREASE STEP") }
                     let param_index = index_of_min as usize / 2;
                     let delta = if index_of_min % 2 == 0 { -step } else { step };
-                    let delta = params[index_of_min/2] * delta;
-                    params[param_index] += delta;
+                    let delta = params.0[index_of_min/2] * delta;
+                    params.0[param_index] += delta;
 
                     res_at_current_params = ress_at_shifted_params[index_of_min];
                     if DEBUG { println!("res_at_current_params = {}", res_at_current_params) }
@@ -118,6 +120,7 @@ impl PatternSearchAdaptiveStep {
             // return None;
         }
         if DEBUG { println!("finished in {} iters", fit_residue_evals) }
+        let params = ParamsG::<float>(params.0.data.into());
         let fit_residue = res_at_current_params;
         Ok(Fit {
             params,

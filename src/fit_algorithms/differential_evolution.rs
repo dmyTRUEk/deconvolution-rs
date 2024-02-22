@@ -9,9 +9,13 @@ use toml::Value as TomlValue;
 use crate::{
     deconvolution::deconvolution_data::DeconvolutionData,
     extensions::IndexOfMin,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::{
+        float::float,
+        linalg::DVect,
+        named_wrappers::{Instrument, InstrumentRevV, Measured, MeasuredV, ParamsG, ParamsV},
+    },
     unmut,
 };
 
@@ -41,13 +45,16 @@ impl DifferentialEvolution {
             // return None;
         }
 
+        let instrument_v_rev: InstrumentRevV = Instrument(deconvolution_data.instrument.points.clone()).into();
+        let measured_v: MeasuredV = Measured(deconvolution_data.measured.points.clone()).into();
+
         let mut rng = thread_rng();
 
-        type Params = Vec<float>;
-        let mut generation = Vec::<Params>::from_iter(
+        let mut generation = Vec::<ParamsV>::from_iter(
             (0..population)
                 .map(|_|
-                    deconvolution_data.deconvolution.get_initial_values_randomized_with_rng(initial_values_random_scale, &mut rng)
+                    deconvolution_data.deconvolution
+                        .get_initial_values_randomized_with_rng_v(initial_values_random_scale, &mut rng)
                 )
         );
         let mut fit_residue_evals: u64 = 0;
@@ -55,7 +62,7 @@ impl DifferentialEvolution {
         let mut ress_of_current_gen: Vec<float> = generation
             .iter()
             // TODO(optim): parallel iter?
-            .map(|p| deconvolution_data.calc_residue_function(p))
+            .map(|p| deconvolution_data.calc_residue_function_v(p, &instrument_v_rev, &measured_v))
             .collect();
         fit_residue_evals += population as u64;
         if DEBUG { println!("res_at_current_gen = {:?}", ress_of_current_gen) }
@@ -78,26 +85,24 @@ impl DifferentialEvolution {
                 let parent_b_i: usize = rng.gen_range(0..population);
                 let parent_c_i: usize = rng.gen_range(0..population);
 
-                let parent_a: &Params = &generation[parent_a_i];
-                let parent_b: &Params = &generation[parent_b_i];
-                let parent_c: &Params = &generation[parent_c_i];
+                let parent_a: &ParamsV = &generation[parent_a_i];
+                let parent_b: &ParamsV = &generation[parent_b_i];
+                let parent_c: &ParamsV = &generation[parent_c_i];
 
-                let child_pure: Params = (0..f_params_amount)
-                    .map(|i|
-                        parent_a[i] + mutation_speed * (parent_b[i] - parent_c[i])
-                    )
-                    .collect();
+                let child_pure: ParamsV = ParamsV(&parent_a.0 + mutation_speed * (&parent_b.0 - &parent_c.0));
 
-                let child_mutated = (0..f_params_amount)
-                    .map(|i| {
-                        let parent = generation[child_i].clone();
-                        if rng.gen_range(0.0..=1.0) < crossover_probability {
-                            child_pure[i]
-                        } else {
-                            parent[i]
+                let child_mutated: ParamsV = ParamsV(
+                    DVect::from_fn(f_params_amount,
+                        |i, _| {
+                            let parent = &generation[child_i];
+                            if rng.gen_range(0.0..=1.0) < crossover_probability {
+                                child_pure.0[i]
+                            } else {
+                                parent.0[i]
+                            }
                         }
-                    })
-                    .collect();
+                    )
+                );
 
                 new_generation.push(child_mutated);
             }
@@ -106,11 +111,11 @@ impl DifferentialEvolution {
             let (fit_residue_evals_extra, ress_of_new_gen): (Vec<u64>, Vec<float>) = (&new_generation)
                 // .into_iter()
                 .into_par_iter()
-                .map(|params_new: &Params| -> (u64, float) {
-                    if !deconvolution_data.is_params_ok(params_new) {
+                .map(|params_new: &ParamsV| -> (u64, float) {
+                    if !deconvolution_data.is_params_ok_v(params_new) {
                         (0, float::NAN)
                     } else {
-                        let residue = deconvolution_data.calc_residue_function(params_new);
+                        let residue = deconvolution_data.calc_residue_function_v(params_new, &instrument_v_rev, &measured_v);
                         (1, if residue.is_finite() { residue } else { float::NAN })
                     }
                     // returns tuple of `residue_function_evals` and `residue_result`.
@@ -153,7 +158,8 @@ impl DifferentialEvolution {
         // }
         if DEBUG { println!("finished in {} iters", fit_residue_evals) }
         let best_i = ress_of_current_gen.index_of_min().unwrap();
-        let params = generation[best_i].clone();
+        // let params = ParamsG::<float>(generation[best_i].0.data.into());
+        let params = ParamsG::<float>(generation.swap_remove(best_i).0.data.into());
         let fit_residue = ress_of_current_gen[best_i];
         Ok(Fit {
             params,

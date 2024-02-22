@@ -6,9 +6,9 @@ use crate::{
     aliases_method_to_function::exp,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -28,9 +28,9 @@ impl DeconvolutionType for Exponents {
     const FORMAT_FOR_DESMOS: &'static str = r"max\left(0,x$comp$ns:0,$ae^{-\frac{x$p$ns}{$t}}\right)";
     const FORMAT_FOR_ORIGIN: &'static str = r"max($a*exp(-(x$p$ns)/($t)))";
 
-    fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
+    fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {
         let sd = significant_digits;
-        params
+        params.0
             .chunks(3)
             .into_iter()
             .map(|parts| {
@@ -79,17 +79,17 @@ impl<T> InitialValuesGeneric<T> for InitialValues_Exponents<T> {
         self.0.len()
     }
 
-    fn from_vec(params: &Vec<T>) -> Self {
+    fn from_vec(params: &ParamsG<T>) -> Self {
         todo!()
     }
 
-    fn to_vec(&self) -> Vec<T> {
+    fn to_vec(&self) -> ParamsG<T> {
         todo!()
     }
 
-    fn params_to_points(&self, params: &Vec<float>, points_len: usize, (x_start, x_end): (float, float)) -> Vec<float> {
-        assert_eq!(0, params.len() % 3);
-        let exponents: Vec<ExponentFunction> = params
+    fn params_to_points(&self, params: &Params, points_len: usize, (x_start, x_end): (float, float)) -> Deconvolved {
+        assert_eq!(0, params.0.len() % 3);
+        let exponents: Vec<ExponentFunction> = params.0
             .chunks(3)
             .into_iter()
             .map(|parts| ExponentFunction::from_slice(parts))
@@ -102,27 +102,27 @@ impl<T> InitialValuesGeneric<T> for InitialValues_Exponents<T> {
                 .sum();
             points.push(sum);
         }
-        points
+        Deconvolved(points)
+    }
+
+    fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
+        todo!()
     }
 }
 
 impl InitialValuesVAD for InitialValues_Exponents<ValueAndDomain> {
-    fn is_params_ok(&self, params: &Vec<float>) -> bool {
+    fn is_params_ok(&self, params: &Params) -> bool {
         todo!();
-        params.chunks(3).into_iter().all(|parts| {
+        params.0.chunks(3).into_iter().all(|parts| {
             let (amplitude, _tau, _shift) = (parts[0], parts[1], parts[2]);
             amplitude >= 0.
         })
-    }
-
-    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
-        todo!()
     }
 }
 
 impl From<InitialValues_Exponents<ValueAndDomain>> for InitialValues_Exponents<float> {
     fn from(value: InitialValues_Exponents<ValueAndDomain>) -> Self {
-        Self::from_vec(&value.to_vec().iter().map(|v| v.value).collect())
+        Self::from_vec(&ParamsG::<float>(value.to_vec().0.iter().map(|v| v.value).collect::<Vec<float>>()))
     }
 }
 

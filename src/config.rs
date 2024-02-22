@@ -9,9 +9,9 @@ use toml::{
 
 use crate::{
     fit_algorithms::FitAlgorithmVariant,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::float::float,
 };
 
 use super::deconvolution::{DeconvolutionVariant, deconvolution_data::AlignStepsTo};
@@ -157,18 +157,19 @@ fn load_from_text_ok() {
         },
         diff_function::DiffFunction,
         fit_algorithms::pattern_search::PatternSearch,
+        types::named_wrappers::ParamsG,
     };
     let config_expected = Config {
         deconvolution_function: ConfigDeconvolutionFunc::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts {
             diff_function_type: DiffFunction::DySqr,
-            initial_vads: InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(&vec![
+            initial_vads: InitialValues_SatExp_TwoDecExp_SeparateConsts::from_vec(&ParamsG(vec![
                 ValueAndDomain::free(0.12),
                 ValueAndDomain::fixed(296.),
                 ValueAndDomain::range_with_max(3.96, 10.),
                 ValueAndDomain::range_with_min(6.71, 0.),
                 ValueAndDomain::range_closed(1.16, (0., 2.)),
                 ValueAndDomain::range_with_min(310., 0.),
-            ]),
+            ])),
         }),
         deconvolution_params: ConfigDeconvolutionParams {
             try_randomized_initial_values: 42,

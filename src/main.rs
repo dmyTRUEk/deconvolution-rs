@@ -3,6 +3,11 @@
 #![feature(
     array_chunks,
     array_windows,
+    const_mut_refs,
+    const_option,
+    const_trait_impl,
+    effects,
+    lint_reasons,
     trait_alias,
 )]
 
@@ -18,23 +23,21 @@ mod antispikes;
 mod config;
 mod deconvolution;
 mod diff_function;
-mod exponent_function;
 mod extensions;
 mod fit_algorithms;
-mod float_type;
-mod linalg_types;
 mod load;
 mod macros;
 mod spectrum;
 mod stacktrace;
+mod types;
 mod utils_io;
 
 use config::Config;
 use deconvolution::deconvolution_data::DeconvolutionData;
 use extensions::{ToStringUnderscoreSeparated, ToStringWithSignificantDigits}; // TODO: use
 use fit_algorithms::Fit;
-use float_type::float;
 use spectrum::Spectrum;
+use types::{float::float, named_wrappers::{Instrument, MeasuredV}};
 use utils_io::flush;
 
 
@@ -123,7 +126,11 @@ fn process_measured_file(
     }.aligned_steps_to(config.input_params.align_step_to);
 
     println!();
-    let fit_residue_with_initial_values = deconvolution_data.calc_residue_function(&deconvolution_data.get_initial_params());
+    let fit_residue_with_initial_values = deconvolution_data.calc_residue_function_v(
+        &deconvolution_data.get_initial_params().into(),
+        &Instrument(deconvolution_data.instrument.points.clone()).into(),
+        &MeasuredV(deconvolution_data.measured.points.clone().into()).into(),
+    );
     println!("fit_residue @ initial_values: {:.4}", fit_residue_with_initial_values);
     println!();
 
@@ -240,7 +247,10 @@ fn output_results(
         params,
     );
 
-    let convolved_points: Vec<float> = deconvolution_data.convolve_from_params(&deconvolution_results.params);
+    let convolved_points: Vec<float> = deconvolution_data.convolve_from_params_v(
+        &deconvolution_results.params.clone().into(),
+        &Instrument(deconvolution_data.instrument.points.clone()).into(),
+    ).0.data.as_vec().to_vec();
     let convolved = Spectrum {
         points: convolved_points,
         x_start: deconvolution_data.measured.x_start,

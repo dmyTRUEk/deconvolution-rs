@@ -1,7 +1,6 @@
 //! Fit Algorithms.
 
 pub mod differential_evolution;
-pub mod differential_evolution_v;
 pub mod pattern_search;
 pub mod pattern_search_adaptive_step;
 pub mod pattern_search_scaled_step;
@@ -12,14 +11,13 @@ use toml::Value as TomlValue;
 
 use crate::{
     deconvolution::deconvolution_data::DeconvolutionData,
-    float_type::float,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::Params},
 };
 
 use self::{
     differential_evolution::DifferentialEvolution,
-    differential_evolution_v::DifferentialEvolutionV,
     pattern_search::PatternSearch,
     pattern_search_adaptive_step::PatternSearchAdaptiveStep,
     pattern_search_scaled_step::PatternSearchScaledStep,
@@ -28,7 +26,7 @@ use self::{
 
 #[derive(Debug)]
 pub struct Fit {
-    pub params: Vec<float>,
+    pub params: Params,
     pub fit_residue: float,
     pub fit_residue_evals: u64,
 }
@@ -42,20 +40,18 @@ pub type FitResult = Result<Fit, &'static str>;
 #[derive(Debug, Clone, PartialEq)]
 pub enum FitAlgorithmVariant {
     DifferentialEvolution(DifferentialEvolution),
-    DifferentialEvolutionV(DifferentialEvolutionV),
     PatternSearch(PatternSearch),
-    PatternSearchScaledStep(PatternSearchScaledStep),
     PatternSearchAdaptiveStep(PatternSearchAdaptiveStep),
+    PatternSearchScaledStep(PatternSearchScaledStep),
 }
 
 impl FitAlgorithmVariant {
-    pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Vec<float>) -> FitResult {
+    pub fn fit(&self, deconvolution_data: &DeconvolutionData, initial_params: Params) -> FitResult {
         match self {
-            Self::DifferentialEvolution(de)       => de.fit(deconvolution_data),
-            Self::DifferentialEvolutionV(dev)     => dev.fit(deconvolution_data),
-            Self::PatternSearch(ps)               => ps.fit(deconvolution_data, initial_params),
-            Self::PatternSearchScaledStep(psss)   => psss.fit(deconvolution_data, initial_params),
-            Self::PatternSearchAdaptiveStep(psas) => psas.fit(deconvolution_data, initial_params),
+            Self::DifferentialEvolution(dev)      => dev.fit(deconvolution_data),
+            Self::PatternSearch(psv)              => psv.fit(deconvolution_data, initial_params.into()),
+            Self::PatternSearchAdaptiveStep(psas) => psas.fit(deconvolution_data, initial_params.into()),
+            Self::PatternSearchScaledStep(psss)   => psss.fit(deconvolution_data, initial_params.into()),
         }
     }
 }
@@ -63,12 +59,11 @@ impl FitAlgorithmVariant {
 impl Load for FitAlgorithmVariant {
     const TOML_NAME: &'static str = "fit_algorithm";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        const FIT_ALGORITHMS_NAMES: [&'static str; 5] = [
+        const FIT_ALGORITHMS_NAMES: [&'static str; 4] = [
             DifferentialEvolution::TOML_NAME,
-            DifferentialEvolutionV::TOML_NAME,
             PatternSearch::TOML_NAME,
-            PatternSearchScaledStep::TOML_NAME,
             PatternSearchAdaptiveStep::TOML_NAME,
+            PatternSearchScaledStep::TOML_NAME,
         ];
         let fit_algorithms = FIT_ALGORITHMS_NAMES
             .map(|fa_name| toml_value.get(fa_name));
@@ -98,10 +93,9 @@ impl Load for FitAlgorithmVariant {
         // - maybe create vec of [PerPoint, Exponents, ...] and try load by them?
         match fit_algorithm_index {
             0 => Self::DifferentialEvolution(DifferentialEvolution::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            1 => Self::DifferentialEvolutionV(DifferentialEvolutionV::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            2 => Self::PatternSearch(PatternSearch::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            1 => Self::PatternSearch(PatternSearch::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            2 => Self::PatternSearchAdaptiveStep(PatternSearchAdaptiveStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             3 => Self::PatternSearchScaledStep(PatternSearchScaledStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
-            4 => Self::PatternSearchAdaptiveStep(PatternSearchAdaptiveStep::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }

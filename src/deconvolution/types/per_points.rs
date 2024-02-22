@@ -1,14 +1,15 @@
 //! Per Point
 
+use std::fmt::Debug;
+
 use toml::Value as TomlValue;
 
 use crate::{
     antispikes::Antispikes,
     diff_function::DiffFunction,
-    float_type::float,
-    linalg_types::DVect,
     load::Load,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
 };
 
 use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain};
@@ -28,7 +29,7 @@ impl DeconvolutionType for PerPoint {
     const FORMAT_FOR_DESMOS: &'static str = unreachable!();
     const FORMAT_FOR_ORIGIN: &'static str = unreachable!();
 
-    fn to_plottable_function(&self, params: &Vec<float>, significant_digits: u8, format: &'static str) -> String {
+    fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {
         unreachable!()
     }
 }
@@ -59,36 +60,32 @@ impl<T> InitialValues_PerPoint<T> {
     }
 }
 
-impl<T: Copy + std::fmt::Debug> InitialValuesGeneric<T> for InitialValues_PerPoint<T> {
+impl<T: Copy + Debug> InitialValuesGeneric<T> for InitialValues_PerPoint<T> {
     const LEN: usize = unreachable!();
 
     fn len(&self) -> usize {
         self.len
     }
 
-    fn from_vec(params: &Vec<T>) -> Self {
+    fn from_vec(params: &ParamsG<T>) -> Self {
         dbg!(params);
         unreachable!()
     }
 
-    fn to_vec(&self) -> Vec<T> {
-        vec![self.vad; self.len()]
+    fn to_vec(&self) -> ParamsG<T> {
+        ParamsG::<T>(vec![self.vad; self.len()])
     }
 
-    fn params_to_points(&self, params: &Vec<float>, _points_len: usize, _x_start_end: (float, float)) -> Vec<float> {
-        params.to_vec()
+    fn params_to_points(&self, params: &Params, _points_len: usize, _x_start_end: (float, float)) -> Deconvolved {
+        Deconvolved(params.0.to_vec())
     }
 
-    fn params_to_points_v(&self, params: &DVect, points_len: usize, x_start_end: (float, float)) -> DVect {
-        params.clone()
+    fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
+        DeconvolvedV(params.0.clone())
     }
 }
 
-impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {
-    fn get_randomized(&self, initial_values_random_scale: float) -> Vec<float> {
-        unimplemented!()
-    }
-}
+impl InitialValuesVAD for InitialValues_PerPoint<ValueAndDomain> {}
 
 
 impl Load for InitialValues_PerPoint<ValueAndDomain> {

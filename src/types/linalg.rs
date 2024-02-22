@@ -2,7 +2,7 @@
 
 use nalgebra::{DVector, DVectorView};
 
-use crate::float_type::float;
+use crate::types::float::float;
 
 
 pub type DVect = DVector<float>;
@@ -17,6 +17,7 @@ impl Reversed for DVectorView<'_, float> {
         // DVect::from_iterator(self.len(), self.iter().rev().copied())
         let len = self.len();
         let mut v = DVect::zeros(len);
+        // TODO(optim): make zipped with reversed i loop
         for i in 0..len {
             v[i] = self[len - i - 1];
         }
@@ -27,7 +28,7 @@ impl Reversed for DVectorView<'_, float> {
 
 #[cfg(test)]
 mod reversed {
-    use crate::linalg_types::{DVect, Reversed};
+    use crate::types::linalg::{DVect, Reversed};
 
     #[test]
     fn len_0() {

@@ -7,11 +7,12 @@ use std::{
 };
 
 use crate::{
-    float_type::float,
+    types::float::float,
     unmut,
 };
 
 
+// TODO(refactor): make it generic for named wrappers.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spectrum {
     pub points: Vec<float>,

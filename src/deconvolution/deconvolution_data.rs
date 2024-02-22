@@ -6,16 +6,15 @@ use toml::Value as TomlValue;
 
 use crate::{
     fit_algorithms::{Fit, FitAlgorithmVariant, FitResult},
-    float_type::float,
-    linalg_types::DVect,
     load::Load,
     spectrum::Spectrum,
     stacktrace::Stacktrace,
+    types::{float::float, named_wrappers::{ConvolvedV, DeconvolvedV, InstrumentRevV, MeasuredV, Params, ParamsG, ParamsV}},
 };
 
 use super::{
     DeconvolutionVariant,
-    convolution::{convolve_by_points, convolve_by_points_v},
+    convolution::convolve_by_points_v,
     types::{
         InitialValuesGeneric,
         sat_exp__dec_exp::InitialValues_SatExp_DecExp,
@@ -44,7 +43,7 @@ impl DeconvolutionData {
         assert_eq!(self.instrument.step, self.measured.step);
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn assert_x_starts_is_aligned(&self) {
         assert_eq!(self.instrument.x_start, self.measured.x_start);
     }
@@ -54,7 +53,7 @@ impl DeconvolutionData {
         self.instrument.step
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn get_x_start(&self) -> float {
         self.assert_x_starts_is_aligned();
         self.instrument.x_start
@@ -95,7 +94,6 @@ impl DeconvolutionData {
         self
     }
 
-    // #[inline(never)]
     pub fn deconvolve(
         &self,
         fit_algorithm: &FitAlgorithmVariant,
@@ -103,116 +101,78 @@ impl DeconvolutionData {
     ) -> DeconvolutionResultOrError {
         self.assert_steps_is_aligned();
         let initial_params = if let Some(initial_values_random_scale) = initial_values_random_scale {
-            self.deconvolution.get_initial_values_randomized(initial_values_random_scale)
+            ParamsG::<float>(self.deconvolution.get_initial_values_randomized_v(initial_values_random_scale).0.data.as_vec().to_vec())
         } else {
             self.deconvolution.get_initial_values()
         };
         fit_algorithm.fit(&self, initial_params)
     }
 
+    // pub fn calc_residue_function(&self, params: &Params) -> float {
+    //     let points_convolved: Convolved = self.convolve_from_params(params);
+    //     assert_eq!(self.get_params_amount(), params.0.len());
+    //     self.deconvolution.calc_residue_function(&self.measured.points, points_convolved)
+    // }
+
     /// Depending on the `self.deconvolution` `params` is:
     /// - PerPoint: list of values at that point,
     /// - Exponents: list of (amplitude, shift, tau),
     /// - SatExp_DecExp: amplitude, shift, tau_a, tau_b,
     /// for other look in [`Deconvolution`].
-    // #[inline(never)]
-    pub fn calc_residue_function(&self, params: &Vec<float>) -> float {
-        let points_convolved: Vec<float> = self.convolve_from_params(params);
-        assert_eq!(self.get_params_amount(), params.len());
-        self.deconvolution.calc_residue_function(&self.measured.points, &points_convolved)
-    }
-
-    // #[inline(never)]
-    pub fn calc_residue_function_v(&self, params: &DVect, instrument: &DVect, measured: &DVect) -> float {
-        let points_convolved: DVect = self.convolve_from_params_v(params, instrument);
-        assert_eq!(self.get_params_amount(), params.len());
+    pub fn calc_residue_function_v(&self, params: &ParamsV, instrument_rev: &InstrumentRevV, measured: &MeasuredV) -> float {
+        let points_convolved: ConvolvedV = self.convolve_from_params_v(params, instrument_rev);
+        assert_eq!(self.get_params_amount(), params.0.len());
         self.deconvolution.calc_residue_function_v(measured, points_convolved)
     }
 
-    // #[inline(never)]
     pub fn get_params_amount(&self) -> usize {
         self.deconvolution.get_initial_values_len(/*self.measured.points.len()*/)
     }
 
-    // #[inline(never)]
-    pub fn get_initial_params(&self) -> Vec<float> {
-        let initial_params: Vec<float> = self.deconvolution.get_initial_values();
-        assert_eq!(self.deconvolution.get_initial_values_len(), initial_params.len());
+    pub fn get_initial_params(&self) -> Params {
+        let initial_params: Params = self.deconvolution.get_initial_values();
+        assert_eq!(self.deconvolution.get_initial_values_len(), initial_params.0.len());
         initial_params
     }
 
-    // #[inline(never)]
-    pub fn is_params_ok(&self, params: &Vec<float>) -> bool {
-        self.deconvolution.is_params_ok(params)
-    }
+    // pub fn is_params_ok(&self, params: &Params) -> bool {
+    //     self.deconvolution.is_params_ok(params)
+    // }
 
-    // #[inline(never)]
-    pub fn is_params_ok_v(&self, params: &DVect) -> bool {
+    pub fn is_params_ok_v(&self, params: &ParamsV) -> bool {
         self.deconvolution.is_params_ok_v(params)
     }
 
-    // #[inline(never)]
-    pub fn convolve_from_params(&self, params: &Vec<float>) -> Vec<float> {
+    // pub fn convolve_from_params(&self, params: &Params) -> Convolved {
+    //     // convert `params` into `points` ("deconvolved"):
+    //     let points_deconvolved: Deconvolved = self.deconvolution.params_to_points(
+    //         params,
+    //         self.measured.points.len(),
+    //         (self.measured.x_start, self.measured.get_x_end())
+    //     );
+    //     self.convolve_from_points(points_deconvolved)
+    // }
+
+    pub fn convolve_from_params_v(&self, params: &ParamsV, instrument_rev: &InstrumentRevV) -> ConvolvedV {
         // convert `params` into `points` ("deconvolved"):
-        let points_deconvolved: Vec<float> = self.deconvolution.params_to_points(
+        let points_deconvolved: DeconvolvedV = self.deconvolution.params_to_points_v(
             params,
             self.measured.points.len(),
             (self.measured.x_start, self.measured.get_x_end())
         );
-        self.convolve_from_points(&points_deconvolved)
+        self.convolve_from_points_v(points_deconvolved, instrument_rev)
     }
 
-    // #[inline(never)]
-    pub fn convolve_from_params_v(&self, params: &DVect, instrument: &DVect) -> DVect {
-        // convert `params` into `points` ("deconvolved"):
-        let points_deconvolved: DVect = self.deconvolution.params_to_points_v(
-            params,
-            self.measured.points.len(),
-            (self.measured.x_start, self.measured.get_x_end())
-        );
-        self.convolve_from_points_v(points_deconvolved, instrument)
-    }
+    // pub fn convolve_from_points(&self, points_deconvolved: Deconvolved) -> Convolved {
+    //     let points_convolved: Convolved = convolve_by_points(&self.instrument.points, points_deconvolved);
+    //     assert_eq!(self.measured.points.len(), points_convolved.0.len());
+    //     points_convolved
+    // }
 
-    // #[inline(never)]
-    pub fn convolve_from_points(&self, points_deconvolved: &Vec<float>) -> Vec<float> {
-        let points_convolved: Vec<float> = convolve_by_points(&self.instrument.points, points_deconvolved);
-        assert_eq!(self.measured.points.len(), points_convolved.len());
+    pub fn convolve_from_points_v(&self, points_deconvolved: DeconvolvedV, instrument_rev: &InstrumentRevV) -> ConvolvedV {
+        let points_convolved: ConvolvedV = convolve_by_points_v(instrument_rev, points_deconvolved);
+        assert_eq!(self.measured.points.len(), points_convolved.0.len());
         points_convolved
-    }
-
-    // #[inline(never)]
-    pub fn convolve_from_points_v(&self, points_deconvolved: DVect, instrument: &DVect) -> DVect {
-        let points_convolved: DVect = convolve_by_points_v(instrument, points_deconvolved);
-        assert_eq!(self.measured.points.len(), points_convolved.len());
-        points_convolved
-    }
-
-    #[deprecated]
-    pub fn calc_chi_squared(&self, deconvolution_results: &Fit) -> float {
-        const DEBUG: bool = false;
-        let points_convolved = self.convolve_from_params(&deconvolution_results.params);
-        let expected = &self.measured.points;
-        let observed = points_convolved;
-        assert_eq!(expected.len(), observed.len());
-        todo!("normalize expected to sum == 1");
-        if DEBUG {
-            for (e, o) in expected.into_iter().zip(&observed) {
-                println!("e={e}, o={o}");
-            }
-        }
-        let n: float = expected.len() as float;
-        let chi_squared: float = n * (
-            expected
-                .into_iter()
-                .zip(observed)
-                .map(|(&e, o)| if e != 0. { (o - e).powi(2) / e } else { 0. })
-                .sum::<float>()
-        );
-        if DEBUG {
-            dbg!(chi_squared);
-            // panic!();
-        }
-        chi_squared
     }
 
     pub fn calc_reduced_chi_square(&self, deconvolution_results: &Fit) -> float {
@@ -248,7 +208,7 @@ impl DeconvolutionData {
         desmos_function_str: Result<String, &str>,
         origin_function_str: Result<String, &str>,
         fit_goodness_msg: &str,
-        params: &Vec<float>,
+        params: &Params,
     ) {
         let mut file_output = File::create(filepathstr_output).unwrap();
         writeln!(file_output, "name: {name}", name=self.deconvolution.get_name()).unwrap();
@@ -262,14 +222,14 @@ impl DeconvolutionData {
         match &self.deconvolution {
             DV::PerPoint(..) => {
                 let sd_deconvolved = Spectrum {
-                    points: deconvolution_results.params.clone(),
+                    points: deconvolution_results.params.0.clone(),
                     step: self.get_step(),
                     x_start: self.measured.x_start,
                 };
                 sd_deconvolved.write_to_file(filepathstr_output);
             }
             DV::Exponents(..) => {
-                for (i, [amplitude, shift, tau]) in deconvolution_results.params.array_chunks().enumerate() {
+                for (i, [amplitude, shift, tau]) in deconvolution_results.params.0.array_chunks().enumerate() {
                     writeln!(file_output, "- i={i}:").unwrap();
                     writeln!(file_output, "  - amplitude={amplitude}").unwrap();
                     writeln!(file_output, "  - shift={shift}").unwrap();
@@ -278,7 +238,7 @@ impl DeconvolutionData {
             }
             DV::SatExp_DecExp(..) => {
                 type SelfF = InitialValues_SatExp_DecExp<float>;
-                let SelfF { amplitude, shift, tau_a, tau_b } = SelfF::from_vec(params);
+                let SelfF { amplitude, shift, tau_a, tau_b } = SelfF::from_vec(&params);
                 writeln!(file_output, "- amplitude={amplitude}").unwrap();
                 writeln!(file_output, "- shift={shift}").unwrap();
                 writeln!(file_output, "- tau_a={tau_a}").unwrap();
