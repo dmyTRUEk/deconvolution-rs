@@ -55,6 +55,8 @@ pub enum DeconvolutionVariant {
 }
 
 impl DeconvolutionVariant {
+    // TODO(refactor): rewrite all this boilerplate code using trait and impl for each
+
     pub fn get_name(&self) -> &'static str {
         match self {
             Self::PerPoint(_) => PerPoint::NAME,

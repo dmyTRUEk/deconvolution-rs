@@ -203,33 +203,29 @@ impl DeconvolutionData {
 
     pub fn write_result_to_file(
         &self,
-        deconvolution_results: &Fit,
         filepathstr_output: &str,
-        desmos_function_str: Result<String, &str>,
-        origin_function_str: Result<String, &str>,
         fit_goodness_msg: &str,
         params: &Params,
+        desmos_function_str: Result<String, &str>,
+        origin_function_str: Result<String, &str>,
     ) {
         let mut file_output = File::create(filepathstr_output).unwrap();
         writeln!(file_output, "name: {name}", name=self.deconvolution.get_name()).unwrap();
-        // TODO(feat): "function: y(x) = ..."
-        writeln!(file_output, "").unwrap();
-        writeln!(file_output, "{fit_goodness_msg}").unwrap();
-        writeln!(file_output, "").unwrap();
-        writeln!(file_output, "params:").unwrap();
+        writeln!(file_output, "\n{fit_goodness_msg}").unwrap();
+        writeln!(file_output, "\nparams:").unwrap();
         // TODO(refactor): make this a method in corresponding types
         type DV = DeconvolutionVariant;
         match &self.deconvolution {
             DV::PerPoint(..) => {
                 let sd_deconvolved = Spectrum {
-                    points: deconvolution_results.params.0.clone(),
+                    points: params.0.clone(),
                     step: self.get_step(),
                     x_start: self.measured.x_start,
                 };
                 sd_deconvolved.write_to_file(filepathstr_output);
             }
             DV::Exponents(..) => {
-                for (i, [amplitude, shift, tau]) in deconvolution_results.params.0.array_chunks().enumerate() {
+                for (i, [amplitude, shift, tau]) in params.0.array_chunks().enumerate() {
                     writeln!(file_output, "- i={i}:").unwrap();
                     writeln!(file_output, "  - amplitude={amplitude}").unwrap();
                     writeln!(file_output, "  - shift={shift}").unwrap();
@@ -316,14 +312,10 @@ impl DeconvolutionData {
             }
         }
         if let Ok(desmos_function_str) = desmos_function_str {
-            writeln!(file_output, "").unwrap();
-            writeln!(file_output, "desmos function:").unwrap();
-            writeln!(file_output, "{desmos_function_str}").unwrap();
+            writeln!(file_output, "\ndesmos function:\n{desmos_function_str}").unwrap();
         }
         if let Ok(origin_function_str) = origin_function_str {
-            writeln!(file_output, "").unwrap();
-            writeln!(file_output, "origin function:").unwrap();
-            writeln!(file_output, "{origin_function_str}").unwrap();
+            writeln!(file_output, "\norigin function:\n{origin_function_str}").unwrap();
         }
     }
 }

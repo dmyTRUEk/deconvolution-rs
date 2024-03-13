@@ -239,12 +239,11 @@ fn output_results(
     ]
         .join("\n");
     deconvolution_data.write_result_to_file(
-        deconvolution_results,
         filepathstr_output,
-        desmos_function_str,
-        origin_function_str,
         &fit_goodness_msg,
         params,
+        desmos_function_str,
+        origin_function_str,
     );
 
     let convolved_points: Vec<float> = deconvolution_data.convolve_from_params_v(
