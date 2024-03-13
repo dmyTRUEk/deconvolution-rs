@@ -208,6 +208,7 @@ impl DeconvolutionData {
         params: &Params,
         desmos_function_str: Result<String, &str>,
         origin_function_str: Result<String, &str>,
+        fit_algorithm: &FitAlgorithmVariant,
     ) {
         let mut file_output = File::create(filepathstr_output).unwrap();
         writeln!(file_output, "name: {name}", name=self.deconvolution.get_name()).unwrap();
@@ -317,6 +318,7 @@ impl DeconvolutionData {
         if let Ok(origin_function_str) = origin_function_str {
             writeln!(file_output, "\norigin function:\n{origin_function_str}").unwrap();
         }
+        writeln!(file_output, "\nfit_algorithm = {fit_algorithm:?}").unwrap();
     }
 }
 

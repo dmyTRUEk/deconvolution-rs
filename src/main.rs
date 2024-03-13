@@ -244,6 +244,7 @@ fn output_results(
         params,
         desmos_function_str,
         origin_function_str,
+        &config.fit_algorithm,
     );
 
     let convolved_points: Vec<float> = deconvolution_data.convolve_from_params_v(
