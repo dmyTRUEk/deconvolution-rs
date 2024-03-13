@@ -29,9 +29,9 @@ impl DeconvolutionType for Two_SatExp_DecExp {
     const NAME: &'static str = "two saturated decaying exponentials";
 
     const FORMAT_FOR_DESMOS: &'static str = concat!(
-        r"max(0,$a1\left(1-e^{-\frac{x$pm1$s1}{$ta1}}\right)\left(e^{-\frac{x$pm1$s1}{$tb1}}\right))",
+        r"max(0,$a1\left(1-\exp\left(-\frac{x$pm1$s1}{$ta1}\right)\right)\left(\exp\left(-\frac{x$pm1$s1}{$tb1}\right)\right))",
         r"+",
-        r"max(0,$a2\left(1-e^{-\frac{x$pm2$s2}{$ta2}}\right)\left(e^{-\frac{x$pm2$s2}{$tb2}}\right))",
+        r"max(0,$a2\left(1-\exp\left(-\frac{x$pm2$s2}{$ta2}\right)\right)\left(\exp\left(-\frac{x$pm2$s2}{$tb2}\right)\right))",
     );
     const FORMAT_FOR_ORIGIN: &'static str = concat!(
         r"max(0,$a1*(1-exp(-(x$pm1$s1)/($ta1)))*exp(-(x$pm1$s1)/($tb1)))",

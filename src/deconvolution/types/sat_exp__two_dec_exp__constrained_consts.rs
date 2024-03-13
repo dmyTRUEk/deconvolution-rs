@@ -28,7 +28,7 @@ pub struct SatExp_TwoDecExp_ConstrainedConsts {
 impl DeconvolutionType for SatExp_TwoDecExp_ConstrainedConsts {
     const NAME: &'static str = "saturated exponential and two decaying exponentials with constrained amplitudes";
 
-    const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-e^{-\frac{x$ssn$s}{$ta}}\right)\left($be^{-\frac{x$ssn$s}{$tb}}+(1$bsn$ba)e^{-\frac{x$ssn$s}{$tc}}\right))";
+    const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-\exp\left(-\frac{x$ssn$s}{$ta}\right)\right)\left($b\exp\left(-\frac{x$ssn$s}{$tb}\right)+(1$bsn$ba)\exp\left(-\frac{x$ssn$s}{$tc}\right)\right))";
     const FORMAT_FOR_ORIGIN: &'static str = r"max(0,$a*(1-exp(-(x$ssn$s)/($ta)))*($b*exp(-(x$ssn$s)/($tb))+(1$bsn$ba)*exp(-(x$ssn$s)/($tc))))";
 
     fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {

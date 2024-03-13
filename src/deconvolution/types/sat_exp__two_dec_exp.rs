@@ -28,7 +28,7 @@ pub struct SatExp_TwoDecExp {
 impl DeconvolutionType for SatExp_TwoDecExp {
     const NAME: &'static str = "saturated exponential and two decaying exponentials";
 
-    const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-e^{-\frac{x$pm$s}{$ta}}\right)\left(e^{-\frac{x$pm$s}{$tb}}+e^{-\frac{x$pm$s}{$tc}}\right))";
+    const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-\exp\left(-\frac{x$pm$s}{$ta}\right)\right)\left(\exp\left(-\frac{x$pm$s}{$tb}\right)+\exp\left(-\frac{x$pm$s}{$tc}\right)\right))";
     const FORMAT_FOR_ORIGIN: &'static str = r"max(0,$a*(1-exp(-(x$pm$s)/($ta)))*(exp(-(x$pm$s)/($tb))+exp(-(x$pm$s)/($tc))))";
 
     fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {

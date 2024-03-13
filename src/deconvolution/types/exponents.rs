@@ -25,7 +25,7 @@ pub struct Exponents {
 impl DeconvolutionType for Exponents {
     const NAME: &'static str = "exponents";
 
-    const FORMAT_FOR_DESMOS: &'static str = r"max\left(0,x$comp$ns:0,$ae^{-\frac{x$p$ns}{$t}}\right)";
+    const FORMAT_FOR_DESMOS: &'static str = r"max\left(0,x$comp$ns:0,$a\exp\left(-\frac{x$p$ns}{$t}\right)\right)";
     const FORMAT_FOR_ORIGIN: &'static str = r"max($a*exp(-(x$p$ns)/($t)))";
 
     fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {

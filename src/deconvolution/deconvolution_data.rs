@@ -43,7 +43,6 @@ impl DeconvolutionData {
         assert_eq!(self.instrument.step, self.measured.step);
     }
 
-    #[expect(dead_code)]
     pub fn assert_x_starts_is_aligned(&self) {
         assert_eq!(self.instrument.x_start, self.measured.x_start);
     }

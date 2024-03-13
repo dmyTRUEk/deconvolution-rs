@@ -199,7 +199,7 @@ impl DeconvolutionVariant {
             Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
-            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts{ initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
         }
     }
 
