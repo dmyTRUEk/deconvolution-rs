@@ -15,6 +15,8 @@ pub mod sat_exp__two_dec_exp__separate_consts;
 #[allow(non_snake_case)]
 pub mod sat_exp__two_dec_exp_plus_const;
 #[allow(non_snake_case)]
+pub mod sigmoid__two_dec_exp__constrained_consts;
+#[allow(non_snake_case)]
 pub mod two__sat_exp__dec_exp;
 
 use rand::{thread_rng, Rng, rngs::ThreadRng};

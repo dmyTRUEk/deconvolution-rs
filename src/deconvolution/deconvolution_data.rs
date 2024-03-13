@@ -23,6 +23,7 @@ use super::{
         sat_exp__two_dec_exp__constrained_consts::InitialValues_SatExp_TwoDecExp_ConstrainedConsts,
         sat_exp__two_dec_exp__separate_consts::InitialValues_SatExp_TwoDecExp_SeparateConsts,
         sat_exp__two_dec_exp_plus_const::InitialValues_SatExp_TwoDecExpPlusConst,
+        sigmoid__two_dec_exp__constrained_consts::InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts,
         two__sat_exp__dec_exp::InitialValues_Two_SatExp_DecExp,
     },
 };
@@ -295,6 +296,16 @@ impl DeconvolutionData {
             }
             DV::SatExp_TwoDecExp_ConstrainedConsts(..) => {
                 type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
+                let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
+                writeln!(file_output, "- amplitude_a={amplitude_a}").unwrap();
+                writeln!(file_output, "- amplitude_b={amplitude_b}").unwrap();
+                writeln!(file_output, "- shift={shift}").unwrap();
+                writeln!(file_output, "- tau_a={tau_a}").unwrap();
+                writeln!(file_output, "- tau_b={tau_b}").unwrap();
+                writeln!(file_output, "- tau_c={tau_c}").unwrap();
+            }
+            DV::Sigmoid_TwoDecExp_ConstrainedConsts(..) => {
+                type SelfF = InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts<float>;
                 let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
                 writeln!(file_output, "- amplitude_a={amplitude_a}").unwrap();
                 writeln!(file_output, "- amplitude_b={amplitude_b}").unwrap();

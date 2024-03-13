@@ -32,6 +32,7 @@ use self::types::{
     sat_exp__two_dec_exp__constrained_consts::{InitialValues_SatExp_TwoDecExp_ConstrainedConsts, SatExp_TwoDecExp_ConstrainedConsts},
     sat_exp__two_dec_exp__separate_consts::{InitialValues_SatExp_TwoDecExp_SeparateConsts, SatExp_TwoDecExp_SeparateConsts},
     sat_exp__two_dec_exp_plus_const::{InitialValues_SatExp_TwoDecExpPlusConst, SatExp_TwoDecExpPlusConst},
+    sigmoid__two_dec_exp__constrained_consts::{InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts, Sigmoid_TwoDecExp_ConstrainedConsts},
     two__sat_exp__dec_exp::{InitialValues_Two_SatExp_DecExp, Two_SatExp_DecExp},
 };
 
@@ -49,6 +50,7 @@ pub enum DeconvolutionVariant {
     SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst),
     SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts),
     SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts),
+    Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts),
     // Fourier { unimplemented },
 }
 
@@ -64,6 +66,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(_) => SatExp_TwoDecExpPlusConst::NAME,
             Self::SatExp_TwoDecExp_SeparateConsts(_) => SatExp_TwoDecExp_SeparateConsts::NAME,
             Self::SatExp_TwoDecExp_ConstrainedConsts(_) => SatExp_TwoDecExp_ConstrainedConsts::NAME,
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(_) => Sigmoid_TwoDecExp_ConstrainedConsts::NAME,
         }
     }
 
@@ -78,6 +81,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.len(),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.len(),
             Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.len(),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.len(),
         }
     }
 
@@ -92,6 +96,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => InitialValues_SatExp_TwoDecExpPlusConst::<float>::from(*initial_vads).to_vec(),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => InitialValues_SatExp_TwoDecExp_SeparateConsts::<float>::from(*initial_vads).to_vec(),
             Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => InitialValues_SatExp_TwoDecExp_ConstrainedConsts::<float>::from(*initial_vads).to_vec(),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts::<float>::from(*initial_vads).to_vec(),
         }
     }
 
@@ -130,6 +135,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
             Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng_v(initial_values_random_scale, rng),
         }
     }
 
@@ -158,6 +164,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
             Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.is_params_ok_v(params),
         }
     }
 
@@ -200,6 +207,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
             Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
             Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.params_to_points_v(params, points_len, x_start_end),
         }
     }
 
@@ -235,6 +243,7 @@ impl DeconvolutionVariant {
             | Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { diff_function_type, .. })
             | Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { diff_function_type, .. })
             | Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
+            | Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts { diff_function_type, .. })
             => {
                 diff_function_type.calc_diff_v(&points_measured.0, &points_convolved.0)
             }
@@ -254,6 +263,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(self_) => self_.to_desmos_function(params, sd),
             Self::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_desmos_function(params, sd),
             Self::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(self_) => self_.to_desmos_function(params, sd),
         })
     }
 
@@ -270,6 +280,7 @@ impl DeconvolutionVariant {
             Self::SatExp_TwoDecExpPlusConst(self_) => self_.to_origin_function(params, sd),
             Self::SatExp_TwoDecExp_SeparateConsts(self_) => self_.to_origin_function(params, sd),
             Self::SatExp_TwoDecExp_ConstrainedConsts(self_) => self_.to_origin_function(params, sd),
+            Self::Sigmoid_TwoDecExp_ConstrainedConsts(self_) => self_.to_origin_function(params, sd),
         })
     }
 }
@@ -278,7 +289,7 @@ impl DeconvolutionVariant {
 impl Load for DeconvolutionVariant {
     const TOML_NAME: &'static str = "deconvolution_function";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 9] = [
+        const DECONVOLUTION_FUNCTIONS_NAMES: [&'static str; 10] = [
             PerPoint::TOML_NAME,
             Exponents::TOML_NAME,
             SatExp_DecExp::TOML_NAME,
@@ -288,6 +299,7 @@ impl Load for DeconvolutionVariant {
             SatExp_TwoDecExpPlusConst::TOML_NAME,
             SatExp_TwoDecExp_SeparateConsts::TOML_NAME,
             SatExp_TwoDecExp_ConstrainedConsts::TOML_NAME,
+            Sigmoid_TwoDecExp_ConstrainedConsts::TOML_NAME,
         ];
         let deconvolution_functions = DECONVOLUTION_FUNCTIONS_NAMES
             .map(|df_name| toml_value.get(df_name));
@@ -325,6 +337,7 @@ impl Load for DeconvolutionVariant {
             6 => Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             7 => Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             8 => Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
+            9 => Self::Sigmoid_TwoDecExp_ConstrainedConsts(Sigmoid_TwoDecExp_ConstrainedConsts::load_from_self_handle_stacktrace(toml_value, stacktrace)),
             _ => unreachable!()
         }
     }

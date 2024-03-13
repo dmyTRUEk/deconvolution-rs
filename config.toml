@@ -53,6 +53,11 @@ diff_function_type = "DySqr"
 # initial_values = "a=1, 0<b=0.1<1, s==5, ta=-1<10, tb=70>0, 0 < tc = 10 < 100"
 initial_values = "a=0.5, b=0.8, s=0.1, ta=0.01, tb=0.1, tc=1"
 
+# y = a / (1+exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
+[deconvolution_function.Sigmoid_TwoDecExp_ConstrainedConsts]
+diff_function_type = "DySqr"
+initial_values = "a=0.5, b=0.8, s=0.1, ta=0.01, tb=0.1, tc=1"
+
 
 [deconvolution_params]
 try_randomized_initial_values = 0
