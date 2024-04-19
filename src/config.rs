@@ -68,39 +68,11 @@ pub struct ConfigDeconvolutionParams {
 impl Load for ConfigDeconvolutionParams {
     const TOML_NAME: &'static str = "deconvolution_params";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        let load_float = |name: &'static str| -> float {
-            let stacktrace = stacktrace.pushed(name);
-            toml_value
-                .get(name)
-                .unwrap_or_else(|| stacktrace.panic_not_found())
-                .as_float()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
-        };
-        let try_randomized_initial_values = {
-            let name = "try_randomized_initial_values";
-            let stacktrace = stacktrace.pushed(name);
-            toml_value
-                .get(name)
-                .unwrap_or_else(|| stacktrace.panic_not_found())
-                .as_integer()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
-        };
-        assert!(try_randomized_initial_values >= 0);
-        let try_randomized_initial_values: u64 = try_randomized_initial_values as u64;
-        let print_only_better_deconvolution = {
-            let name = "print_only_better_deconvolution";
-            let stacktrace = stacktrace.pushed(name);
-            toml_value
-                .get(name)
-                .unwrap_or_else(|| stacktrace.panic_not_found())
-                .as_bool()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("bool"))
-        };
         Self {
-            try_randomized_initial_values,
-            initial_values_random_scale: load_float("initial_values_random_scale"),
-            change_sing_probability: load_float("change_sing_probability"),
-            print_only_better_deconvolution,
+            try_randomized_initial_values: toml_value.load_u64("try_randomized_initial_values", stacktrace),
+            initial_values_random_scale: toml_value.load_float("initial_values_random_scale", stacktrace),
+            change_sing_probability: toml_value.load_float("change_sing_probability", stacktrace),
+            print_only_better_deconvolution: toml_value.load_bool("print_only_better_deconvolution", stacktrace),
         }
     }
 }
@@ -125,17 +97,8 @@ pub struct ConfigOutputParams {
 impl Load for ConfigOutputParams {
     const TOML_NAME: &'static str = "output_params";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        let significant_digits = {
-            let name = "significant_digits";
-            let stacktrace = stacktrace.pushed(name);
-            toml_value
-                .get(name)
-                .unwrap_or_else(|| stacktrace.panic_not_found())
-                .as_integer()
-                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
-        };
+        let significant_digits = toml_value.load_u8("significant_digits", stacktrace);
         assert!(significant_digits < 20);
-        let significant_digits = significant_digits as u8;
         Self {
             significant_digits,
         }
@@ -144,6 +107,55 @@ impl Load for ConfigOutputParams {
 
 type ConfigFitAlgorithmParams = FitAlgorithmVariant;
 
+
+
+trait ExtTomlValueLoadPrimitives {
+    fn load_float(&self, name: &'static str, stacktrace: &Stacktrace) -> float;
+    fn load_bool(&self, name: &'static str, stacktrace: &Stacktrace) -> bool;
+    fn load_u64(&self, name: &'static str, stacktrace: &Stacktrace) -> u64;
+    fn load_u8(&self, name: &'static str, stacktrace: &Stacktrace) -> u8;
+}
+impl ExtTomlValueLoadPrimitives for TomlValue {
+    fn load_float(&self, name: &'static str, stacktrace: &Stacktrace) -> float {
+        let stacktrace = stacktrace.pushed(name);
+        self
+            .get(name)
+            .unwrap_or_else(|| stacktrace.panic_not_found())
+            .as_float()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("float"))
+    }
+
+    fn load_bool(&self, name: &'static str, stacktrace: &Stacktrace) -> bool {
+        let stacktrace = stacktrace.pushed(name);
+        self
+            .get(name)
+            .unwrap_or_else(|| stacktrace.panic_not_found())
+            .as_bool()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("bool"))
+    }
+
+    fn load_u64(&self, name: &'static str, stacktrace: &Stacktrace) -> u64 {
+        let stacktrace = stacktrace.pushed(name);
+        self
+            .get(name)
+            .unwrap_or_else(|| stacktrace.panic_not_found())
+            .as_integer()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+            .try_into/* ::<u64> */()
+            .unwrap_or_else(|_| stacktrace.panic_cant_parse_as("u64"))
+    }
+
+    fn load_u8(&self, name: &'static str, stacktrace: &Stacktrace) -> u8 {
+        let stacktrace = stacktrace.pushed(name);
+        self
+            .get(name)
+            .unwrap_or_else(|| stacktrace.panic_not_found())
+            .as_integer()
+            .unwrap_or_else(|| stacktrace.panic_cant_parse_as("integer"))
+            .try_into/* ::<u64> */()
+            .unwrap_or_else(|_| stacktrace.panic_cant_parse_as("u64"))
+    }
+}
 
 
 
