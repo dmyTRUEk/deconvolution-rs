@@ -137,9 +137,9 @@ impl Load for InitialValues_SatExp_TwoDecExpPlusConst<ValueAndDomain> {
             amplitude: try_get("a"),
             shift: try_get("s"),
             height: try_get("h"),
-            tau_a: try_get("a"),
-            tau_b: try_get("b"),
-            tau_c: try_get("c"),
+            tau_a: try_get("ta"),
+            tau_b: try_get("tb"),
+            tau_c: try_get("tc"),
         }
     }
 }
