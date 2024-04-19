@@ -3,12 +3,12 @@
 #![feature(
     array_chunks,
     array_windows,
-    const_mut_refs,
-    const_option,
-    const_trait_impl,
-    effects,
+    // const_mut_refs,
+    // const_option,
+    // const_trait_impl,
+    // effects,
     lint_reasons,
-    trait_alias,
+    // trait_alias,
 )]
 
 use std::{
