@@ -10,7 +10,7 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     load::Load,
     stacktrace::Stacktrace,
-    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
+    types::{float::float, linalg::DVect, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -67,12 +67,11 @@ pub struct AllowTbLessThanTa(bool);
 impl Load for AllowTbLessThanTa {
     const TOML_NAME: &'static str = "allow_tb_less_than_ta";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
-        // let allow_tb_less_than_ta = toml_value
-        //     .get("allow_tb_less_than_ta")
-        //     .expect("deconvolution_function -> SatExp_DecExpPlusConst: `allow_tb_less_than_ta` not found")
-        //     .as_bool()
-        //     .expect("deconvolution_function -> SatExp_DecExpPlusConst -> allow_tb_less_than_ta: can't parse as boolean");
-        todo!()
+        Self (
+            toml_value
+                .as_bool()
+                .unwrap_or_else(|| stacktrace.panic_cant_parse_as("boolean"))
+        )
     }
 }
 
@@ -88,6 +87,15 @@ pub struct InitialValues_SatExp_DecExpPlusConst<T> {
     pub tau_b: T,
 }
 
+impl InitialValues_SatExp_DecExpPlusConst<float> {
+    fn from_vec_vf(params: &ParamsV) -> Self {
+        match params.0.as_slice()[..] {
+            [amplitude, shift, height, tau_a, tau_b] => Self { amplitude, shift, height, tau_a, tau_b },
+            _ => unreachable!()
+        }
+    }
+}
+
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExpPlusConst<T> {
     const LEN: usize = 5;
 
@@ -99,36 +107,46 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExpPlusConst<T
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        todo!()
+        let Self { amplitude, shift, height, tau_a, tau_b } = *self;
+        ParamsG::<T>(vec![amplitude, shift, height, tau_a, tau_b])
     }
 
     fn params_to_points(&self, params: &Params, points_len: usize, x_start_end: (float, float)) -> Deconvolved {
-        todo!()
-        // let Self { amplitude, shift, height, tau_a, tau_b } = Self::from_vec(params);
-        // let mut points = Vec::<float>::with_capacity(points_len);
-        // for i in 0..points_len {
-        //     let x: float = i_to_x(i, points_len, x_start_end);
-        //     let x_m_shift: float = x - shift;
-        //     let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + height);
-        //     points.push(y.max(0.));
-        // }
-        // points
+        type SelfF = InitialValues_SatExp_DecExpPlusConst<float>;
+        let SelfF { amplitude, shift, height, tau_a, tau_b } = SelfF::from_vec(params);
+        let mut points = Vec::<float>::with_capacity(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift = x - shift;
+            let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + height);
+            let y = y.max(0.);
+            points.push(y);
+        }
+        Deconvolved(points)
     }
 
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
-        todo!()
+        type SelfF = InitialValues_SatExp_DecExpPlusConst<float>;
+        let SelfF { amplitude, shift, height, tau_a, tau_b } = SelfF::from_vec_vf(params);
+        let mut points = DVect::zeros(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift = x - shift;
+            let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + height);
+            let y = y.max(0.);
+            points[i] = y;
+        }
+        DeconvolvedV(points)
     }
 }
 
 impl InitialValuesVAD for InitialValues_SatExp_DecExpPlusConst<ValueAndDomain> {
-    fn is_params_ok(&self, params: &Params) -> bool {
-        // let (amplitude, _, height, tau_a, tau_b) = (params[0], params[1], params[2], params[3], params[4]);
-        // amplitude >= 0. && height >= 0. && tau_a >= 0. && tau_b >= 0. && if *allow_tb_less_than_ta { true } else { tau_a < tau_b }
-        todo!();
-        // self.to_vec().iter()
-        //     .zip(params)
-        //     .all(|(d, &p)| d.contains(p))
-        // && if self.allow_tb_less_than_ta { true } else { self.tau_a < self.tau_b }
+    fn is_params_ok_v(&self, params: &ParamsV) -> bool {
+        // self.to_vec().0.iter()
+        //     .zip(&params.0)
+        //     .all(|(vad, &value)| vad.contains(value))
+        // && if self.allow_tb_less_than_ta { true } else { self.tau_a.value < self.tau_b.value }
+        unimplemented!()
     }
 }
 
