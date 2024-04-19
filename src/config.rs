@@ -62,7 +62,6 @@ pub type ConfigDeconvolutionFunc = DeconvolutionVariant;
 pub struct ConfigDeconvolutionParams {
     pub try_randomized_initial_values: u64,
     pub initial_values_random_scale: float,
-    pub change_sing_probability: float,
     pub print_only_better_deconvolution: bool,
 }
 impl Load for ConfigDeconvolutionParams {
@@ -71,7 +70,6 @@ impl Load for ConfigDeconvolutionParams {
         Self {
             try_randomized_initial_values: toml_value.load_u64("try_randomized_initial_values", stacktrace),
             initial_values_random_scale: toml_value.load_float("initial_values_random_scale", stacktrace),
-            change_sing_probability: toml_value.load_float("change_sing_probability", stacktrace),
             print_only_better_deconvolution: toml_value.load_bool("print_only_better_deconvolution", stacktrace),
         }
     }
@@ -188,7 +186,6 @@ fn load_from_text_ok() {
         deconvolution_params: ConfigDeconvolutionParams {
             try_randomized_initial_values: 42,
             initial_values_random_scale: 10.,
-            change_sing_probability: 0.05,
             print_only_better_deconvolution: true,
         },
         input_params: ConfigInputParams {
@@ -215,7 +212,6 @@ initial_values = "b=0.12, c==296, s=3.96<10, ta=6.71>0, 0<tb=1.16<2, tc=310>0"
 [deconvolution_params]
 try_randomized_initial_values = 42
 initial_values_random_scale = 10.0
-change_sing_probability = 0.05
 print_only_better_deconvolution = true
 
 [input_params]
@@ -249,7 +245,6 @@ initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
 [deconvolution_params]
 try_randomized_initial_values = 42
 initial_values_random_scale = 10.0
-change_sing_probability = 0.05
 print_only_better_deconvolution = true
 
 [input_params]

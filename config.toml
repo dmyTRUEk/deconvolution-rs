@@ -62,7 +62,6 @@ initial_values = "a=0.5, b=0.8, s=0.1, ta=0.01, tb=0.1, tc=1"
 [deconvolution_params]
 try_randomized_initial_values = 0
 initial_values_random_scale = 10.0
-change_sing_probability = 0.05
 print_only_better_deconvolution = false
 
 [input_params]
