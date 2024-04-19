@@ -21,10 +21,10 @@
 # y = a1 * (1-exp(-(x-s1)/ta1)) * exp(-(x-s1)/tb1) + a2 * (1-exp(-(x-s2)/ta2)) * exp(-(x-s2)/tb2)
 # [deconvolution_function.Two_SatExp_DecExp]
 # diff_function_type = "DySqr"
-# initial_values = "
+# initial_values = """
 #     a1=0.12, s1=296.0, ta1=3.96, tb1=6.7,
 #     a2=1.16, s2=310.0, ta2=23.2, tb2=1.79,
-# "
+# """
 
 # y = a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + h)
 # [deconvolution_function.SatExp_DecExpPlusConst]

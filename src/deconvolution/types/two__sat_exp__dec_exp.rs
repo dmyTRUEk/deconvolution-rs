@@ -10,7 +10,7 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     load::Load,
     stacktrace::Stacktrace,
-    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
+    types::{float::float, linalg::DVect, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -86,6 +86,21 @@ pub struct InitialValues_Two_SatExp_DecExp<T> {
     pub tau_b2: T,
 }
 
+impl InitialValues_Two_SatExp_DecExp<float> {
+    fn from_vec_vf(params: &ParamsV) -> Self {
+        match params.0.as_slice()[..] {
+            [
+                amplitude_1, shift_1, tau_a1, tau_b1,
+                amplitude_2, shift_2, tau_a2, tau_b2,
+            ] => Self {
+                amplitude_1, shift_1, tau_a1, tau_b1,
+                amplitude_2, shift_2, tau_a2, tau_b2,
+            },
+            _ => unreachable!()
+        }
+    }
+}
+
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
     const LEN: usize = 8;
 
@@ -123,7 +138,21 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
     }
 
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
-        todo!()
+        type SelfF = InitialValues_Two_SatExp_DecExp<float>;
+        let SelfF { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = SelfF::from_vec_vf(params);
+        let mut points = DVect::zeros(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift_1 = x - shift_1;
+            let x_m_shift_2 = x - shift_2;
+            let y1 = amplitude_1 * (1. - exp(-(x_m_shift_1)/tau_a1)) * exp(-(x_m_shift_1)/tau_b1);
+            let y2 = amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2);
+            let y1 = y1.max(0.);
+            let y2 = y2.max(0.);
+            let y = y1 + y2;
+            points[i] = y;
+        }
+        DeconvolvedV(points)
     }
 }
 
