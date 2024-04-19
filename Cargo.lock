@@ -62,7 +62,7 @@ dependencies = [
 
 [[package]]
 name = "deconvolution-rs"
-version = "9.2.1"
+version = "9.2.2"
 dependencies = [
  "nalgebra",
  "rand",
