@@ -166,25 +166,25 @@ impl Spectrum {
     pub fn load_from_file(filename: &str) -> Self {
         Self::try_load_from_file(filename).unwrap()
     }
-    pub fn try_load_from_file(filename: &str) -> Result<Self, &'static str> {
-        let file = File::open(filename).map_err(|_| "Unable to open file")?;
-        let lines = BufReader::new(file).lines();
+    pub fn try_load_from_file(filename: &str) -> Result<Self, String> {
+        let file = File::open(filename).map_err(|_| format!("Unable to open file `{filename}`."))?;
         let mut x_start: Option<float> = None;
         let mut x_prev: Option<float> = None;
         let mut step: Option<float> = None;
         let mut ys: Vec<float> = vec![];
-        for line in lines.into_iter() {
-            let line = line.map_err(|_| "Unable to unwrap line")?;
+        let lines = BufReader::new(file).lines();
+        for (line_number, line) in lines.into_iter().enumerate() {
+            let line = line.map_err(|_| format!("line#{line_number}: Unable to unwrap line."))?;
             let line = line.trim();
             if line == "" { continue }
             let (x, y) = line
                 .split_once([' ', '\t'])
-                .ok_or("Unable to split line once at space or tab.")?;
+                .ok_or(format!("line#{line_number}: Unable to split line at space or tab."))?;
             let x = x
                 .trim()
                 .replace(',', ".")
                 .parse::<float>()
-                .map_err(|_| "Unable to parse `x`")?;
+                .map_err(|_| format!("line#{line_number}: Unable to parse `x`=`{x}`."))?;
             match x_start {
                 None => {
                     x_start = Some(x);
@@ -197,7 +197,11 @@ impl Spectrum {
                         Some(step) => {
                             let this_step = x - x_prev.unwrap();
                             let diff = (this_step - step).abs() / step.abs();
-                            assert!(diff < 2e-2, "step={step}, this_step={this_step} => diff={diff}");
+                            const MAX_DIFF: float = 2e-2;
+                            assert!(
+                                diff < MAX_DIFF,
+                                "line#{line_number}: expected `this_step` to be close enough to `step`: `diff` = `|this_step - step| / step` < `MAX_DIFF`={MAX_DIFF},\nbut diff={diff}, step={step}, this_step={this_step}."
+                            );
                         }
                     }
                     x_prev = Some(x);
@@ -207,10 +211,10 @@ impl Spectrum {
                 .trim()
                 .replace(',', ".")
                 .parse()
-                .map_err(|_| "Unable to parse `y`")?;
+                .map_err(|_| format!("line#{line_number}: Unable to parse `y`=`{y}`"))?;
             ys.push(y);
         }
-        let x_start = x_start.ok_or("`start_x` is None")?;
+        let x_start = x_start.ok_or("`x_start` is None")?;
         let step = step.ok_or("`step` is None")?;
         Ok(Spectrum {
             points: ys,
