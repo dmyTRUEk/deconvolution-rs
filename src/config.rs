@@ -80,12 +80,14 @@ impl Load for ConfigDeconvolutionParams {
 #[derive(Debug, PartialEq)]
 pub struct ConfigInputParams {
     pub align_step_to: AlignStepsTo,
+    pub max_step_relative_diff: float,
 }
 impl Load for ConfigInputParams {
     const TOML_NAME: &'static str = "input_params";
     fn load_from_self(toml_value: &TomlValue, stacktrace: &Stacktrace) -> Self {
         Self {
             align_step_to: AlignStepsTo::load_from_parent_handle_stacktrace(toml_value, stacktrace),
+            max_step_relative_diff: toml_value.load_float("max_step_relative_diff", stacktrace),
         }
     }
 }
@@ -191,6 +193,7 @@ fn load_from_text_ok() {
         },
         input_params: ConfigInputParams {
             align_step_to: AlignStepsTo::Smaller,
+            max_step_relative_diff: 0.02,
         },
         output_params: ConfigOutputParams {
             significant_digits: 4,
@@ -217,6 +220,7 @@ print_only_better_deconvolution = true
 
 [input_params]
 align_steps_to = "smaller"
+max_step_relative_diff = 0.02
 
 [output_params]
 significant_digits = 4

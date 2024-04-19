@@ -92,8 +92,8 @@ impl Spectrum {
         }
     }
 
-    pub fn load_from_file_as_instrumental(filename: &str) -> Self {
-        let mut self_ = Self::load_from_file(filename);
+    pub fn load_from_file_as_instrumental(filename: &str, max_step_relative_diff: float) -> Self {
+        let mut self_ = Self::load_from_file(filename, max_step_relative_diff);
         self_.trim_zeros();
         self_.pad_zeros();
         if self_.points.len() % 2 != 1 { unreachable!() }
@@ -163,10 +163,10 @@ impl Spectrum {
         };
     }
 
-    pub fn load_from_file(filename: &str) -> Self {
-        Self::try_load_from_file(filename).unwrap()
+    pub fn load_from_file(filename: &str, max_step_relative_diff: float) -> Self {
+        Self::try_load_from_file(filename, max_step_relative_diff).unwrap()
     }
-    pub fn try_load_from_file(filename: &str) -> Result<Self, String> {
+    pub fn try_load_from_file(filename: &str, max_step_relative_diff: float) -> Result<Self, String> {
         let file = File::open(filename).map_err(|_| format!("Unable to open file `{filename}`."))?;
         let mut x_start: Option<float> = None;
         let mut x_prev: Option<float> = None;
@@ -196,12 +196,16 @@ impl Spectrum {
                         }
                         Some(step) => {
                             let this_step = x - x_prev.unwrap();
-                            let diff = (this_step - step).abs() / step.abs();
-                            const MAX_DIFF: float = 2e-2;
-                            assert!(
-                                diff < MAX_DIFF,
-                                "line#{line_number}: expected `this_step` to be close enough to `step`: `diff` = `|this_step - step| / step` < `MAX_DIFF`={MAX_DIFF},\nbut diff={diff}, step={step}, this_step={this_step}."
-                            );
+                            let step_relative_diff = (this_step - step).abs() / step.abs();
+                            if step_relative_diff > max_step_relative_diff {
+                                return Err(format!(
+                                    "\
+                                    line#{line_number}: expected `this_step` to be close enough to `step`:\n\
+                                    `step_relative_diff` = `|this_step - step| / step` < `max_step_relative_diff`={max_step_relative_diff},\n\
+                                    but step={step}, this_step={this_step} => step_relative_diff={step_relative_diff}.\
+                                    "
+                                ));
+                            }
                         }
                     }
                     x_prev = Some(x);

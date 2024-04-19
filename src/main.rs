@@ -55,7 +55,7 @@ fn main() {
     let filepathstr_instrument: &str = &cli_args[1];
 
     print!("Loading instrumental spectrum  from `{}`...", filepathstr_instrument); flush();
-    let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument);
+    let instrument = Spectrum::load_from_file_as_instrumental(filepathstr_instrument, config.input_params.max_step_relative_diff);
     let filepathstr_instrument_stem = Path::new(filepathstr_instrument)
         .file_stem().unwrap().to_str().unwrap();
     println!(" done");
@@ -79,7 +79,7 @@ fn process_measured_file(
     filepathstr_measured: &str,
 ) {
     print!("Loading spectrum to deconvolve from `{}`...", filepathstr_measured); flush();
-    let measured = Spectrum::load_from_file(filepathstr_measured);
+    let measured = Spectrum::load_from_file(filepathstr_measured, config.input_params.max_step_relative_diff);
     println!(" done");
 
     // TODO: warning if points in instr more than in spectrum.

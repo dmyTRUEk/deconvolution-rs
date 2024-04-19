@@ -67,6 +67,7 @@ print_only_better_deconvolution = false
 
 [input_params]
 align_steps_to = "smaller"
+max_step_relative_diff = 0.02
 
 [output_params]
 significant_digits = 4
