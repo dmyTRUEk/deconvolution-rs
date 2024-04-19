@@ -10,7 +10,7 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     load::Load,
     stacktrace::Stacktrace,
-    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
+    types::{float::float, linalg::DVect, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -71,6 +71,15 @@ pub struct InitialValues_SatExp_TwoDecExp<T> {
     pub tau_c: T,
 }
 
+impl InitialValues_SatExp_TwoDecExp<float> {
+    fn from_vec_vf(params: &ParamsV) -> Self {
+        match params.0.as_slice()[..] {
+            [amplitude, shift, tau_a, tau_b, tau_c] => Self { amplitude, shift, tau_a, tau_b, tau_c },
+            _ => unreachable!()
+        }
+    }
+}
+
 impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp<T> {
     const LEN: usize = 5;
 
@@ -100,7 +109,17 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp<T> {
     }
 
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
-        todo!()
+        type SelfF = InitialValues_SatExp_TwoDecExp<float>;
+        let SelfF { amplitude, shift, tau_a, tau_b, tau_c } = SelfF::from_vec_vf(params);
+        let mut points = DVect::zeros(points_len);
+        for i in 0..points_len {
+            let x: float = i_to_x(i, points_len, x_start_end);
+            let x_m_shift = x - shift;
+            let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c));
+            let y = y.max(0.);
+            points[i] = y;
+        }
+        DeconvolvedV(points)
     }
 }
 
