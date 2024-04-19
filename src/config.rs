@@ -203,32 +203,31 @@ fn load_from_text_ok() {
             beta: None,
         }),
     };
-    let config_actual = Config::load_from_text(
-r#"
-[deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
-diff_function_type = "DySqr"
-initial_values = "b=0.12, c==296, s=3.96<10, ta=6.71>0, 0<tb=1.16<2, tc=310>0"
+    let config_actual = Config::load_from_text(r#"
+        [deconvolution_function.SatExp_TwoDecExp_SeparateConsts]
+        diff_function_type = "DySqr"
+        initial_values = "b=0.12, c==296, s=3.96<10, ta=6.71>0, 0<tb=1.16<2, tc=310>0"
 
-[deconvolution_params]
-try_randomized_initial_values = 42
-initial_values_random_scale = 10.0
-print_only_better_deconvolution = true
+        [deconvolution_params]
+        try_randomized_initial_values = 42
+        initial_values_random_scale = 10.0
+        print_only_better_deconvolution = true
 
-[input_params]
-align_steps_to = "smaller"
-max_step_relative_diff = 0.02
+        [input_params]
+        align_steps_to = "smaller"
+        max_step_relative_diff = 0.02
 
-[output_params]
-significant_digits = 4
+        [output_params]
+        significant_digits = 4
 
-[fit_algorithm.pattern_search]
-fit_algorithm_min_step = 1e-4
-fit_residue_evals_max = 1_000_000
-fit_residue_max_value = 1e6
-initial_step = 1.0
-alpha = 1.1     # step increase coefficient
-# beta = 0.9    # step decrease coefficient, default = 1/alpha
-"#);
+        [fit_algorithm.pattern_search]
+        fit_algorithm_min_step = 1e-4
+        fit_residue_evals_max = 1_000_000
+        fit_residue_max_value = 1e6
+        initial_step = 1.0
+        alpha = 1.1     # step increase coefficient
+        #beta = 0.9     # step decrease coefficient, default = 1/alpha
+    "#);
     dbg!(&config_expected, &config_actual);
     assert_eq!(config_expected, config_actual);
 }
@@ -236,29 +235,28 @@ alpha = 1.1     # step increase coefficient
 #[should_panic(expected = "`deconvolution_function` -> `Two_SatExp_DecExp` -> `diff_function_type`: not found")]
 #[test]
 fn load_from_text_panic() {
-    Config::load_from_text(
-r#"
-[deconvolution_function.Two_SatExp_DecExp]
-# diff_function_type = "DySqr"
-initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
+    let _ = Config::load_from_text(r#"
+        [deconvolution_function.Two_SatExp_DecExp]
+        #diff_function_type = "DySqr"
+        initial_values = [ 0.12, 296.0, 3.96, 6.7, 1.16, 310.0, 23.2, 1.79 ]
 
-[deconvolution_params]
-try_randomized_initial_values = 42
-initial_values_random_scale = 10.0
-print_only_better_deconvolution = true
+        [deconvolution_params]
+        try_randomized_initial_values = 42
+        initial_values_random_scale = 10.0
+        print_only_better_deconvolution = true
 
-[input_params]
-align_steps_to = "smaller"
+        [input_params]
+        align_steps_to = "smaller"
 
-[output_params]
-significant_digits = 4
+        [output_params]
+        significant_digits = 4
 
-[fit_algorithm.pattern_search]
-fit_algorithm_min_step = 1e-4
-fit_residue_evals_max = 1_000_000
-fit_residue_max_value = 1e6
-initial_step = 1.0
-alpha = 1.1     # step increase coefficient
-# beta = 0.9    # step decrease coefficient, default = 1/alpha
-"#);
+        [fit_algorithm.pattern_search]
+        fit_algorithm_min_step = 1e-4
+        fit_residue_evals_max = 1_000_000
+        fit_residue_max_value = 1e6
+        initial_step = 1.0
+        alpha = 1.1     # step increase coefficient
+        #beta = 0.9     # step decrease coefficient, default = 1/alpha
+    "#);
 }
