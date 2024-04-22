@@ -11,7 +11,7 @@ use toml::Value as TomlValue;
 
 use crate::{
     deconvolution::deconvolution_data::DeconvolutionData,
-    load::Load,
+    load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
     types::{float::float, named_wrappers::Params},
 };

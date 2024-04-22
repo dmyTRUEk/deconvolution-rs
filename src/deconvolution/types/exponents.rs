@@ -6,7 +6,7 @@ use crate::{
     aliases_method_to_function::exp,
     diff_function::DiffFunction,
     extensions::ToStringWithSignificantDigits,
-    load::Load,
+    load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
     types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,

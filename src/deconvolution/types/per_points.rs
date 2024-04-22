@@ -7,7 +7,7 @@ use toml::Value as TomlValue;
 use crate::{
     antispikes::Antispikes,
     diff_function::DiffFunction,
-    load::Load,
+    load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
     types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
 };

@@ -9,7 +9,7 @@ use toml::{
 
 use crate::{
     fit_algorithms::FitAlgorithmVariant,
-    load::Load,
+    load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
     types::float::float,
 };

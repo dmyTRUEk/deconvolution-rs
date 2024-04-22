@@ -12,7 +12,7 @@ use rand::{rngs::ThreadRng, thread_rng};
 use toml::Value as TomlValue;
 
 use crate::{
-    load::Load,
+    load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
     types::{
         float::float,
