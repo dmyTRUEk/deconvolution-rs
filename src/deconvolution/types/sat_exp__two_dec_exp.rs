@@ -16,10 +16,9 @@ use crate::{
 
 use super::{
     Function,
-    InitialValuesGeneric,
-    InitialValuesVAD,
     ValueAndDomain,
     i_to_x::i_to_x,
+    initial_values::{InitialValuesGeneric, InitialValuesVAD},
 };
 
 

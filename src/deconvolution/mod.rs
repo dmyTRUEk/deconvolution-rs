@@ -23,9 +23,8 @@ use crate::{
 use self::types::{
     Function,
     FunctionAutoImplFns,
-    InitialValuesGeneric,
-    InitialValuesVAD,
     exponents::{Exponents, InitialValues_Exponents},
+    initial_values::{InitialValuesGeneric, InitialValuesVAD},
     per_points::PerPoint,
     sat_exp__dec_exp::{InitialValues_SatExp_DecExp, SatExp_DecExp},
     sat_exp__dec_exp_plus_const::{InitialValues_SatExp_DecExpPlusConst, SatExp_DecExpPlusConst},

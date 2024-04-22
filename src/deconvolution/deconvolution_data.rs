@@ -16,7 +16,7 @@ use super::{
     DeconvolutionVariant,
     convolution::convolve_by_points_v,
     types::{
-        InitialValuesGeneric,
+        initial_values::InitialValuesGeneric,
         sat_exp__dec_exp::InitialValues_SatExp_DecExp,
         sat_exp__dec_exp_plus_const::InitialValues_SatExp_DecExpPlusConst,
         sat_exp__two_dec_exp::InitialValues_SatExp_TwoDecExp,
