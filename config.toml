@@ -8,10 +8,10 @@
 # y = a1*exp(-(x-s1)/t1) + …
 # [deconvolution_function.Exponents]
 # diff_function_type = "DySqr"
-# initial_values = "
+# initial_values = """
 #     a0=1.0, s0=1.0, t0=1.0,
 #     a1=1.0, s1=1.0, t1=1.0,
-# "
+# """
 
 # y = a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)
 # [deconvolution_function.SatExp_DecExp]
