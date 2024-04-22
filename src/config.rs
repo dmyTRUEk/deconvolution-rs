@@ -162,10 +162,12 @@ impl ExtTomlValueLoadPrimitives for TomlValue {
 #[test]
 fn load_from_text_ok() {
     use crate::{
-        deconvolution::types::{
+        deconvolution::{
             initial_values::InitialValuesGeneric,
-            sat_exp__two_dec_exp__separate_consts::{SatExp_TwoDecExp_SeparateConsts, InitialValues_SatExp_TwoDecExp_SeparateConsts},
-            value_and_domain::ValueAndDomain,
+            types::{
+                sat_exp__two_dec_exp__separate_consts::{SatExp_TwoDecExp_SeparateConsts, InitialValues_SatExp_TwoDecExp_SeparateConsts},
+                value_and_domain::ValueAndDomain,
+            },
         },
         diff_function::DiffFunction,
         fit_algorithms::pattern_search::PatternSearch,

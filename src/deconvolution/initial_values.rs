@@ -8,7 +8,7 @@ use crate::types::{
     named_wrappers::{DeconvolvedV, ParamsG, ParamsV},
 };
 
-use super::value_and_domain::ValueAndDomain;
+use super::types::value_and_domain::ValueAndDomain;
 
 
 // Here `T` is `float` or `ValueAndDomain`.
@@ -36,6 +36,7 @@ pub trait InitialValuesGeneric<T> {
 }
 
 
+// TODO(refactor): remake into auto fns, like in [`crate::load::LoadAutoImplFns`].
 pub trait InitialValuesVAD
 where Self: Sized + InitialValuesGeneric<ValueAndDomain>
 {

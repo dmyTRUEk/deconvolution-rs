@@ -12,11 +12,9 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{
-    Function,
-    ValueAndDomain,
-    initial_values::{InitialValuesGeneric, InitialValuesVAD},
-};
+use super::super::initial_values::{InitialValuesGeneric, InitialValuesVAD};
+
+use super::{Function, ValueAndDomain};
 
 
 /// a1*exp(-(x-s1)/t1) + …

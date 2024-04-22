@@ -1,4 +1,4 @@
-/// Value and Domain
+//! Value and Domain.
 
 use rand::{Rng, rngs::ThreadRng};
 

@@ -12,11 +12,9 @@ use crate::{
     types::{float::float, named_wrappers::{DeconvolvedV, Params, ParamsG, ParamsV}},
 };
 
-use super::{
-    Function,
-    ValueAndDomain,
-    initial_values::{InitialValuesGeneric, InitialValuesVAD},
-};
+use super::super::initial_values::{InitialValuesGeneric, InitialValuesVAD};
+
+use super::{Function, ValueAndDomain};
 
 
 /// [y0, y1, y2, …]

@@ -1,6 +1,7 @@
 //! Deconvolution
 
 pub mod deconvolution_data;
+pub mod initial_values;
 pub mod types;
 
 pub(self) mod convolution;
@@ -20,20 +21,22 @@ use crate::{
     },
 };
 
-use self::types::{
-    Function,
-    FunctionAutoImplFns,
-    exponents::{Exponents, InitialValues_Exponents},
+use self::{
     initial_values::{InitialValuesGeneric, InitialValuesVAD},
-    per_points::PerPoint,
-    sat_exp__dec_exp::{InitialValues_SatExp_DecExp, SatExp_DecExp},
-    sat_exp__dec_exp_plus_const::{InitialValues_SatExp_DecExpPlusConst, SatExp_DecExpPlusConst},
-    sat_exp__two_dec_exp::{InitialValues_SatExp_TwoDecExp, SatExp_TwoDecExp},
-    sat_exp__two_dec_exp__constrained_consts::{InitialValues_SatExp_TwoDecExp_ConstrainedConsts, SatExp_TwoDecExp_ConstrainedConsts},
-    sat_exp__two_dec_exp__separate_consts::{InitialValues_SatExp_TwoDecExp_SeparateConsts, SatExp_TwoDecExp_SeparateConsts},
-    sat_exp__two_dec_exp_plus_const::{InitialValues_SatExp_TwoDecExpPlusConst, SatExp_TwoDecExpPlusConst},
-    sigmoid__two_dec_exp__constrained_consts::{InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts, Sigmoid_TwoDecExp_ConstrainedConsts},
-    two__sat_exp__dec_exp::{InitialValues_Two_SatExp_DecExp, Two_SatExp_DecExp},
+    types::{
+        Function,
+        FunctionAutoImplFns,
+        exponents::{Exponents, InitialValues_Exponents},
+        per_points::PerPoint,
+        sat_exp__dec_exp::{InitialValues_SatExp_DecExp, SatExp_DecExp},
+        sat_exp__dec_exp_plus_const::{InitialValues_SatExp_DecExpPlusConst, SatExp_DecExpPlusConst},
+        sat_exp__two_dec_exp::{InitialValues_SatExp_TwoDecExp, SatExp_TwoDecExp},
+        sat_exp__two_dec_exp__constrained_consts::{InitialValues_SatExp_TwoDecExp_ConstrainedConsts, SatExp_TwoDecExp_ConstrainedConsts},
+        sat_exp__two_dec_exp__separate_consts::{InitialValues_SatExp_TwoDecExp_SeparateConsts, SatExp_TwoDecExp_SeparateConsts},
+        sat_exp__two_dec_exp_plus_const::{InitialValues_SatExp_TwoDecExpPlusConst, SatExp_TwoDecExpPlusConst},
+        sigmoid__two_dec_exp__constrained_consts::{InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts, Sigmoid_TwoDecExp_ConstrainedConsts},
+        two__sat_exp__dec_exp::{InitialValues_Two_SatExp_DecExp, Two_SatExp_DecExp},
+    },
 };
 
 

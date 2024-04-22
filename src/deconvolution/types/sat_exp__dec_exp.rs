@@ -14,12 +14,9 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{
-    Function,
-    ValueAndDomain,
-    i_to_x::i_to_x,
-    initial_values::{InitialValuesGeneric, InitialValuesVAD},
-};
+use super::super::initial_values::{InitialValuesGeneric, InitialValuesVAD};
+
+use super::{Function, ValueAndDomain, i_to_x::i_to_x};
 
 
 // a * (1-exp(-(x-s)/ta)) * exp(-(x-s)/tb)

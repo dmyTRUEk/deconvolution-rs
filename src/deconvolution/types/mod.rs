@@ -1,6 +1,5 @@
 //! Deconvolution types
 
-pub mod initial_values;
 pub mod value_and_domain;
 
 // functions:

@@ -1,4 +1,4 @@
-/// helper function to convert from index to coordinate
+//! Helper function to convert from index to coordinate.
 
 use crate::types::float::float;
 
