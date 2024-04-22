@@ -77,7 +77,8 @@ pub struct InitialValues_SatExp_TwoDecExp_SeparateConsts<T> {
 impl InitialValues_SatExp_TwoDecExp_SeparateConsts<float> {
     fn from_vec_vf(params: &ParamsV) -> Self {
         match params.0.as_slice()[..] {
-            [amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c] => Self { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c },
+            [      amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c ] =>
+            Self { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
     }
@@ -88,13 +89,14 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_Separat
 
     fn from_vec(params: &ParamsG<T>) -> Self {
         match params.0[..] {
-            [amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c] => Self { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c },
+            [      amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c ] =>
+            Self { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        let Self { amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = *self;
+        let Self {        amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c } = *self;
         ParamsG::<T>(vec![amplitude_b, amplitude_c, shift, tau_a, tau_b, tau_c])
     }
 
@@ -104,9 +106,10 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_Separat
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift: float = x - shift;
+            let x_m_shift = x - shift;
             let y = (1. - exp(-x_m_shift/tau_a)) * (amplitude_b*exp(-x_m_shift/tau_b) + amplitude_c*exp(-x_m_shift/tau_c));
-            points.push(y.max(0.));
+            let y = y.max(0.);
+            points.push(y);
         }
         Deconvolved(points)
     }

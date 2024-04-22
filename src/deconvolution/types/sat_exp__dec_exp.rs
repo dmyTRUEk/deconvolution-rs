@@ -72,7 +72,8 @@ pub struct InitialValues_SatExp_DecExp<T> {
 impl InitialValues_SatExp_DecExp<float> {
     fn from_vec_vf(params: &ParamsV) -> Self {
         match params.0.as_slice()[..] {
-            [amplitude, shift, tau_a, tau_b] => Self { amplitude, shift, tau_a, tau_b },
+            [      amplitude, shift, tau_a, tau_b ] =>
+            Self { amplitude, shift, tau_a, tau_b },
             _ => unreachable!()
         }
     }
@@ -99,9 +100,10 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExp<T> {
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift: float = x - shift;
+            let x_m_shift = x - shift;
             let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * exp(-x_m_shift/tau_b);
-            points.push(y.max(0.));
+            let y = y.max(0.);
+            points.push(y);
         }
         Deconvolved(points)
     }
@@ -154,7 +156,6 @@ impl Load for InitialValues_SatExp_DecExp<ValueAndDomain> {
             tau_a: try_get("ta"),
             tau_b: try_get("tb"),
         }
-
     }
 }
 

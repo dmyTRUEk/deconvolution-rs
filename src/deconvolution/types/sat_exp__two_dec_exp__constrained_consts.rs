@@ -75,21 +75,12 @@ pub struct InitialValues_SatExp_TwoDecExp_ConstrainedConsts<T> {
 }
 
 impl InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float> {
-    // #[inline(never)]
     fn from_vec_vf(params: &ParamsV) -> Self {
-        // TODO(optimize)?
         match params.0.as_slice()[..] {
-            [amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c] => Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
+            [      amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c ] =>
+            Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
-        // Self {
-        //     amplitude_a: params[0],
-        //     amplitude_b: params[1],
-        //     shift: params[2],
-        //     tau_a: params[3],
-        //     tau_b: params[4],
-        //     tau_c: params[5],
-        // }
     }
 }
 
@@ -98,42 +89,41 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExp_Constra
 
     fn from_vec(params: &ParamsG<T>) -> Self {
         match params.0[..] {
-            [amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c] => Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
+            [      amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c ] =>
+            Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        let Self { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = *self;
+        let Self {        amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = *self;
         ParamsG::<T>(vec![amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c])
     }
 
     fn params_to_points(&self, params: &Params, points_len: usize, x_start_end: (float, float)) -> Deconvolved {
         type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
         let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(params);
-        // TODO(optimization): fill by zeros and use index instead of push
-        let mut points: Vec<float> = Vec::with_capacity(points_len);
+        let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift: float = x - shift;
+            let x_m_shift = x - shift;
             let y = amplitude_a * (1. - exp(-x_m_shift/tau_a)) * (amplitude_b*exp(-x_m_shift/tau_b) + (1.-amplitude_b)*exp(-x_m_shift/tau_c));
-            points.push(y.max(0.));
+            let y = y.max(0.);
+            points.push(y);
         }
         Deconvolved(points)
     }
 
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
         type SelfF = InitialValues_SatExp_TwoDecExp_ConstrainedConsts<float>;
-        // TODO(optimize)?: use `from_vec_v`.
-        // let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec(&params.data.as_vec());
         let SelfF { amplitude_a, amplitude_b, shift, tau_a, tau_b, tau_c } = SelfF::from_vec_vf(params);
-        // TODO(optimization)?: use `from_fn`.
-        let mut points: DVect = DVect::zeros(points_len);
+        let mut points = DVect::zeros(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift: float = x - shift;
+            let x_m_shift = x - shift;
             let y = amplitude_a * (1. - exp(-x_m_shift/tau_a)) * (amplitude_b*exp(-x_m_shift/tau_b) + (1.-amplitude_b)*exp(-x_m_shift/tau_c));
-            points[i] = y.max(0.);
+            let y = y.max(0.);
+            points[i] = y;
         }
         DeconvolvedV(points)
     }

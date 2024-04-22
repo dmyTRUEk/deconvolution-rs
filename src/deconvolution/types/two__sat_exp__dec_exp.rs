@@ -118,8 +118,14 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        let Self { amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2 } = *self;
-        ParamsG::<T>(vec![amplitude_1, shift_1, tau_a1, tau_b1, amplitude_2, shift_2, tau_a2, tau_b2])
+        let Self {
+            amplitude_1, shift_1, tau_a1, tau_b1,
+            amplitude_2, shift_2, tau_a2, tau_b2,
+        } = *self;
+        ParamsG::<T>(vec![
+            amplitude_1, shift_1, tau_a1, tau_b1,
+            amplitude_2, shift_2, tau_a2, tau_b2,
+        ])
     }
 
     fn params_to_points(&self, params: &Params, points_len: usize, x_start_end: (float, float)) -> Deconvolved {
@@ -128,11 +134,14 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_Two_SatExp_DecExp<T> {
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift_1: float = x - shift_1;
-            let x_m_shift_2: float = x - shift_2;
+            let x_m_shift_1 = x - shift_1;
+            let x_m_shift_2 = x - shift_2;
             let y1 = amplitude_1 * (1. - exp(-(x_m_shift_1)/tau_a1)) * exp(-(x_m_shift_1)/tau_b1);
             let y2 = amplitude_2 * (1. - exp(-(x_m_shift_2)/tau_a2)) * exp(-(x_m_shift_2)/tau_b2);
-            points.push(y1.max(0.) + y2.max(0.));
+            let y1 = y1.max(0.);
+            let y2 = y2.max(0.);
+            let y = y1 + y2;
+            points.push(y);
         }
         Deconvolved(points)
     }

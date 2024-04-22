@@ -19,7 +19,7 @@ pub mod sigmoid__two_dec_exp__constrained_consts;
 #[allow(non_snake_case)]
 pub mod two__sat_exp__dec_exp;
 
-use rand::{thread_rng, Rng, rngs::ThreadRng};
+use rand::{Rng, rngs::ThreadRng};
 
 use crate::{
     extensions::SplitAndKeep,
@@ -74,7 +74,7 @@ pub(super) enum ValueDomain {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ValueAndDomain {
     pub value: float,
-    pub domain: ValueDomain,
+    domain: ValueDomain,
 }
 
 impl ValueAndDomain {
@@ -123,10 +123,9 @@ impl ValueAndDomain {
         }
     }
 
-    #[deprecated] // TODO: remove if not needed?
-    pub fn get_randomized(&self, initial_values_random_scale: float) -> float {
-        self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
-    }
+    // pub fn get_randomized(&self, initial_values_random_scale: float) -> float {
+    //     self.get_randomized_with_rng(initial_values_random_scale, &mut thread_rng())
+    // }
 
     pub fn get_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> float {
         match self.domain {
@@ -136,6 +135,7 @@ impl ValueAndDomain {
             | ValueDomain::RangeWithMin(..)
             | ValueDomain::RangeWithMax(..)
             => {
+                // TODO: optimize
                 loop {
                     let new_value = self.value * rng.gen_range(1./initial_values_random_scale .. initial_values_random_scale);
                     if self.contains(new_value) {

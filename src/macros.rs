@@ -1,6 +1,5 @@
 //! Macros.
 
-
 #[macro_export]
 macro_rules! swap {
     ($a:expr, $b:expr) => { {

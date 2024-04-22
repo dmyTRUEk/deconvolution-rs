@@ -55,14 +55,17 @@ impl Spectrum {
         ((self.get_x_range()) / step_new).floor() as usize + 1
     }
 
-    pub fn recalculated_with_step(mut self, step_new: float) -> Self {
-        if !step_new.is_finite() { panic!() }
+    pub fn recalculate_with_step(&mut self, step_new: float) {
+        if !step_new.is_finite() { panic!("`recalculate_with_step` -> `step_new` isn't finite, it is: `{step_new}`") }
         let self_old = self.clone();
-        self.points = vec![];
-        self.step = step_new;
+        let mut self_new = Self {
+            points: vec![],
+            step: step_new,
+            x_start: self.x_start,
+        };
         let points_len_after_recalc: usize = self_old.get_points_len_after_recalc_with_step(step_new);
         for i in 0..points_len_after_recalc {
-            let x: float = self.get_x_from_index(i);
+            let x: float = self_new.get_x_from_index(i);
             let (index_of_closest_lhs, index_of_closest_rhs): (usize, usize) = self_old.get_indices_of_closest_to_lhs_rhs(x);
             let y: float = if index_of_closest_lhs == index_of_closest_rhs {
                 self_old.points[index_of_closest_lhs]
@@ -71,8 +74,14 @@ impl Spectrum {
                 let t: float = (x - self_old.get_x_from_index(index_of_closest_lhs)) / self_old.step;
                 (1.-t) * self_old.points[index_of_closest_lhs] + t * self_old.points[index_of_closest_rhs]
             };
-            self.points.push(y);
+            self_new.points.push(y);
         }
+        *self = self_new;
+    }
+
+    #[allow(dead_code)] // for tests
+    fn recalculated_with_step(mut self, step_new: float) -> Self {
+        self.recalculate_with_step(step_new);
         self
     }
 

@@ -80,7 +80,7 @@ impl<T: Copy + Debug> InitialValuesGeneric<T> for InitialValues_PerPoint<T> {
         Deconvolved(params.0.to_vec())
     }
 
-    fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
+    fn params_to_points_v(&self, params: &ParamsV, _points_len: usize, _x_start_end: (float, float)) -> DeconvolvedV {
         DeconvolvedV(params.0.clone())
     }
 }

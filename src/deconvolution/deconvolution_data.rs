@@ -60,32 +60,28 @@ impl DeconvolutionData {
     }
 
     /// Make [`step`] in [`instrument`] and [`measured`] same,
-    /// towards smaller/bigger step (more points in total).
+    /// towards smaller or bigger step.
     ///
-    /// [`step`]: SpectrumData::step
+    /// [`step`]: Spectrum::step
     /// [`instrument`]: DeconvolutionData::instrument
     /// [`measured`]: DeconvolutionData::measured
     pub fn aligned_steps_to(mut self, align_steps_to: AlignStepsTo) -> Self {
         match self.instrument.step.partial_cmp(&self.measured.step) {
-            Some(Ordering::Equal) => return self,
-            Some(Ordering::Less) => {
-                match align_steps_to {
-                    AlignStepsTo::Smaller => {
-                        self.measured = self.measured.recalculated_with_step(self.instrument.step);
-                    }
-                    AlignStepsTo::Bigger => {
-                        self.instrument = self.instrument.recalculated_with_step(self.measured.step);
-                    }
+            Some(Ordering::Equal) => {}
+            Some(Ordering::Less) => match align_steps_to {
+                AlignStepsTo::Smaller => {
+                    self.measured.recalculate_with_step(self.instrument.step);
+                }
+                AlignStepsTo::Bigger => {
+                    self.instrument.recalculate_with_step(self.measured.step);
                 }
             }
-            Some(Ordering::Greater) => {
-                match align_steps_to {
-                    AlignStepsTo::Smaller => {
-                        self.instrument = self.instrument.recalculated_with_step(self.measured.step);
-                    }
-                    AlignStepsTo::Bigger => {
-                        self.measured = self.measured.recalculated_with_step(self.instrument.step);
-                    }
+            Some(Ordering::Greater) => match align_steps_to {
+                AlignStepsTo::Smaller => {
+                    self.instrument.recalculate_with_step(self.measured.step);
+                }
+                AlignStepsTo::Bigger => {
+                    self.measured.recalculate_with_step(self.instrument.step);
                 }
             }
             None => panic!("One of the steps is `NaN`")

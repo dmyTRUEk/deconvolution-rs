@@ -90,7 +90,8 @@ pub struct InitialValues_SatExp_DecExpPlusConst<T> {
 impl InitialValues_SatExp_DecExpPlusConst<float> {
     fn from_vec_vf(params: &ParamsV) -> Self {
         match params.0.as_slice()[..] {
-            [amplitude, shift, height, tau_a, tau_b] => Self { amplitude, shift, height, tau_a, tau_b },
+            [      amplitude, shift, height, tau_a, tau_b ] =>
+            Self { amplitude, shift, height, tau_a, tau_b },
             _ => unreachable!()
         }
     }
@@ -101,13 +102,14 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_DecExpPlusConst<T
 
     fn from_vec(params: &ParamsG<T>) -> Self {
         match params.0[..] {
-            [amplitude, shift, height, tau_a, tau_b] => Self { amplitude, shift, height, tau_a, tau_b },
+            [      amplitude, shift, height, tau_a, tau_b ] =>
+            Self { amplitude, shift, height, tau_a, tau_b },
             _ => unreachable!()
         }
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        let Self { amplitude, shift, height, tau_a, tau_b } = *self;
+        let Self {        amplitude, shift, height, tau_a, tau_b } = *self;
         ParamsG::<T>(vec![amplitude, shift, height, tau_a, tau_b])
     }
 

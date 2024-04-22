@@ -76,7 +76,8 @@ pub struct InitialValues_SatExp_TwoDecExpPlusConst<T> {
 impl InitialValues_SatExp_TwoDecExpPlusConst<float> {
     fn from_vec_vf(params: &ParamsV) -> Self {
         match params.0.as_slice()[..] {
-            [amplitude, shift, height, tau_a, tau_b, tau_c] => Self { amplitude, shift, height, tau_a, tau_b, tau_c },
+            [      amplitude, shift, height, tau_a, tau_b, tau_c ] =>
+            Self { amplitude, shift, height, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
     }
@@ -87,13 +88,14 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExpPlusCons
 
     fn from_vec(params: &ParamsG<T>) -> Self {
         match params.0[..] {
-            [amplitude, shift, height, tau_a, tau_b, tau_c] => Self { amplitude, shift, height, tau_a, tau_b, tau_c },
+            [      amplitude, shift, height, tau_a, tau_b, tau_c ] =>
+            Self { amplitude, shift, height, tau_a, tau_b, tau_c },
             _ => unreachable!()
         }
     }
 
     fn to_vec(&self) -> ParamsG<T> {
-        let Self { amplitude, shift, height, tau_a, tau_b, tau_c } = *self;
+        let Self {        amplitude, shift, height, tau_a, tau_b, tau_c } = *self;
         ParamsG::<T>(vec![amplitude, shift, height, tau_a, tau_b, tau_c])
     }
 
@@ -103,9 +105,10 @@ impl<T: Copy> InitialValuesGeneric<T> for InitialValues_SatExp_TwoDecExpPlusCons
         let mut points = Vec::<float>::with_capacity(points_len);
         for i in 0..points_len {
             let x: float = i_to_x(i, points_len, x_start_end);
-            let x_m_shift: float = x - shift;
+            let x_m_shift = x - shift;
             let y = amplitude * (1. - exp(-x_m_shift/tau_a)) * (exp(-x_m_shift/tau_b) + exp(-x_m_shift/tau_c) + height);
-            points.push(y.max(0.));
+            let y = y.max(0.);
+            points.push(y);
         }
         Deconvolved(points)
     }
