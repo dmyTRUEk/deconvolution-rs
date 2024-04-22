@@ -12,7 +12,7 @@ use crate::{
     types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
 };
 
-use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain};
+use super::{Function, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain};
 
 
 /// [y0, y1, y2, …]
@@ -23,7 +23,7 @@ pub struct PerPoint {
     pub initial_vad: InitialValues_PerPoint<ValueAndDomain>,
 }
 
-impl DeconvolutionType for PerPoint {
+impl Function for PerPoint {
     const NAME: &'static str = "per point";
 
     const FORMAT_FOR_DESMOS: &'static str = unreachable!();

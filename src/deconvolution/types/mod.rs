@@ -32,7 +32,7 @@ use crate::{
 };
 
 
-pub(super) trait DeconvolutionType {
+pub(super) trait Function {
     /// Human readable name, used for output file.
     const NAME: &'static str;
 

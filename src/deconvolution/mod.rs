@@ -21,7 +21,7 @@ use crate::{
 };
 
 use self::types::{
-    DeconvolutionType,
+    Function,
     InitialValuesGeneric,
     InitialValuesVAD,
     exponents::{Exponents, InitialValues_Exponents},

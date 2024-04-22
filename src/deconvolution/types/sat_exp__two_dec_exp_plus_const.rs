@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
+use super::{Function, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// a * (1-exp(-(x-s)/ta)) * (exp(-(x-s)/tb) + exp(-(x-s)/tc) + h)
@@ -25,7 +25,7 @@ pub struct SatExp_TwoDecExpPlusConst {
     pub initial_vads: InitialValues_SatExp_TwoDecExpPlusConst<ValueAndDomain>,
 }
 
-impl DeconvolutionType for SatExp_TwoDecExpPlusConst {
+impl Function for SatExp_TwoDecExpPlusConst {
     const NAME: &'static str = "saturated exponential and two decaying exponentials plus const";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max(0,$a\left(1-\exp\left(-\frac{x$pm$s}{$ta}\right)\right)\left(\exp\left(-\frac{x$pm$s}{$tb}\right)+\exp\left(-\frac{x$pm$s}{$tc}\right)$pmh$h\right))";

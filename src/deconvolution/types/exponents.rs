@@ -12,7 +12,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
+use super::{Function, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// a1*exp(-(x-s1)/t1) + …
@@ -22,7 +22,7 @@ pub struct Exponents {
     pub initial_vads: InitialValues_Exponents<ValueAndDomain>,
 }
 
-impl DeconvolutionType for Exponents {
+impl Function for Exponents {
     const NAME: &'static str = "exponents";
 
     const FORMAT_FOR_DESMOS: &'static str = r"max\left(0,x$comp$ns:0,$a\exp\left(-\frac{x$p$ns}{$t}\right)\right)";

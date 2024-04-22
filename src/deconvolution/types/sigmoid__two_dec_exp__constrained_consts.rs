@@ -14,7 +14,7 @@ use crate::{
     utils_io::format_by_dollar_str,
 };
 
-use super::{DeconvolutionType, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
+use super::{Function, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain, i_to_x};
 
 
 /// a / (1+exp(-(x-s)/ta)) * (b*exp(-(x-s)/tb) + (1-b)*exp(-(x-s)/tc))
@@ -25,7 +25,7 @@ pub struct Sigmoid_TwoDecExp_ConstrainedConsts {
     pub initial_vads: InitialValues_Sigmoid_TwoDecExp_ConstrainedConsts<ValueAndDomain>,
 }
 
-impl DeconvolutionType for Sigmoid_TwoDecExp_ConstrainedConsts {
+impl Function for Sigmoid_TwoDecExp_ConstrainedConsts {
     const NAME: &'static str = "sigmoid and two decaying exponentials with constrained amplitudes";
 
     const FORMAT_FOR_DESMOS: &'static str = r"\frac{$a}{1+\exp\left(-\frac{x$ssn$s}{$ta}\right)}\left($b\exp\left(-\frac{x$ssn$s}{$tb}\right)+(1$bsn$ba)\exp\left(-\frac{x$ssn$s}{$tc}\right)\right)";
