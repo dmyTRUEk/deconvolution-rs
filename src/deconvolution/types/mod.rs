@@ -31,6 +31,9 @@ use crate::{
     },
 };
 
+mod i_to_x;
+
+
 
 pub(super) trait Function {
     /// Human readable name, used for output file.
@@ -269,18 +272,5 @@ where Self: Sized + InitialValuesGeneric<ValueAndDomain>
             )
         )
     }
-}
-
-
-
-fn i_to_x(
-    i: usize,
-    points_len: usize,
-    (x_start, x_end): (float, float),
-) -> float {
-    let x_range: float = x_end - x_start;
-    let t: float = (i as float) / ((points_len - 1) as float);
-    let x: float = t * x_range + x_start;
-    x
 }
 
