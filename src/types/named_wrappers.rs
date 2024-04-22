@@ -8,10 +8,6 @@ use crate::types::{
 };
 
 
-pub trait Get<T> {
-    fn get(self) -> T;
-}
-
 
 pub struct Convolved(pub Vec<float>);
 pub struct Deconvolved(pub Vec<float>);

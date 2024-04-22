@@ -17,7 +17,7 @@ impl Reversed for DVectorView<'_, float> {
         // DVect::from_iterator(self.len(), self.iter().rev().copied())
         let len = self.len();
         let mut v = DVect::zeros(len);
-        // TODO(optim): make zipped with reversed i loop
+        // TODO(optim): use unsafe?
         for i in 0..len {
             v[i] = self[len - i - 1];
         }

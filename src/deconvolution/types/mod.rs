@@ -266,7 +266,7 @@ where Self: Sized + InitialValuesGeneric<ValueAndDomain>
 
 
 
-pub(self) fn i_to_x(
+fn i_to_x(
     i: usize,
     points_len: usize,
     (x_start, x_end): (float, float),
