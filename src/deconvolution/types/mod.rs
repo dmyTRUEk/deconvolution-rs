@@ -41,7 +41,14 @@ pub(super) trait Function {
     const FORMAT_FOR_ORIGIN: &'static str;
 
     fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String;
+}
 
+pub(super) trait FunctionAutoImplFns {
+    fn to_desmos_function(&self, params: &Params, significant_digits: u8) -> String;
+    fn to_origin_function(&self, params: &Params, significant_digits: u8) -> String;
+}
+
+impl<T: Function> FunctionAutoImplFns for T {
     fn to_desmos_function(&self, params: &Params, significant_digits: u8) -> String {
         self.to_plottable_function(params, significant_digits, Self::FORMAT_FOR_DESMOS)
     }

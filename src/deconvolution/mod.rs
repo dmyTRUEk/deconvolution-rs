@@ -22,6 +22,7 @@ use crate::{
 
 use self::types::{
     Function,
+    FunctionAutoImplFns,
     InitialValuesGeneric,
     InitialValuesVAD,
     exponents::{Exponents, InitialValues_Exponents},
