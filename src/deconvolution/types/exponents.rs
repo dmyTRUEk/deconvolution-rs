@@ -116,15 +116,7 @@ impl<T> InitialValuesGeneric<T> for InitialValues_Exponents<T> {
     }
 }
 
-impl InitialValuesVAD for InitialValues_Exponents<ValueAndDomain> {
-    fn is_params_ok(&self, params: &Params) -> bool {
-        todo!();
-        params.0.chunks(3).into_iter().all(|parts| {
-            let (amplitude, _tau, _shift) = (parts[0], parts[1], parts[2]);
-            amplitude >= 0.
-        })
-    }
-}
+impl InitialValuesVAD for InitialValues_Exponents<ValueAndDomain> {}
 
 impl From<InitialValues_Exponents<ValueAndDomain>> for InitialValues_Exponents<float> {
     fn from(value: InitialValues_Exponents<ValueAndDomain>) -> Self {

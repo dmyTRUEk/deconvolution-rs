@@ -35,6 +35,7 @@ mod i_to_x;
 use self::value_and_domain::ValueAndDomain;
 
 
+
 pub(super) trait Function {
     /// Human readable name, used for output file.
     const NAME: &'static str;
@@ -97,12 +98,6 @@ pub trait InitialValuesVAD
 where Self: Sized + InitialValuesGeneric<ValueAndDomain>
 {
     /// Check if given params are satisfying conditions
-    fn is_params_ok(&self, params: &Params) -> bool {
-        self.to_vec().0.iter()
-            .zip(&params.0)
-            .all(|(vad, &value)| vad.contains(value))
-    }
-
     fn is_params_ok_v(&self, params: &ParamsV) -> bool {
         self.to_vec().0.iter()
             .zip(&params.0)

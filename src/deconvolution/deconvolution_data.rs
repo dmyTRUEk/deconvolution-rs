@@ -131,10 +131,6 @@ impl DeconvolutionData {
         initial_params
     }
 
-    // pub fn is_params_ok(&self, params: &Params) -> bool {
-    //     self.deconvolution.is_params_ok(params)
-    // }
-
     pub fn is_params_ok_v(&self, params: &ParamsV) -> bool {
         self.deconvolution.is_params_ok_v(params)
     }
