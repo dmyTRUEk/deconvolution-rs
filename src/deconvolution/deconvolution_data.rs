@@ -354,8 +354,8 @@ mod deconvolution_data {
     use super::super::{
         deconvolution_data::{AlignStepsTo, DeconvolutionData},
         types::{
-            ValueAndDomain,
             per_points::{InitialValues_PerPoint, PerPoint},
+            value_and_domain::ValueAndDomain,
         },
     };
     mod align_steps_to_smaller {

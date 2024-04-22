@@ -359,8 +359,8 @@ mod deconvolve {
             deconvolution::{
                 DeconvolutionVariant,
                 types::{
-                    ValueAndDomain,
-                    per_points::{PerPoint, InitialValues_PerPoint},
+                    per_points::{InitialValues_PerPoint, PerPoint},
+                    value_and_domain::ValueAndDomain,
                 },
             },
             diff_function::DiffFunction,

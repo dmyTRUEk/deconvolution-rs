@@ -29,7 +29,7 @@ impl Function for PerPoint {
     const FORMAT_FOR_DESMOS: &'static str = unreachable!();
     const FORMAT_FOR_ORIGIN: &'static str = unreachable!();
 
-    fn to_plottable_function(&self, params: &Params, significant_digits: u8, format: &'static str) -> String {
+    fn to_plottable_function(&self, _params: &Params, _significant_digits: u8, _format: &'static str) -> String {
         unreachable!()
     }
 }
