@@ -10,8 +10,8 @@ use crate::{
 
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-// Domain, Limits, Bounds
-pub(super) enum ValueDomain {
+// other possible names: Domain, Limits, Bounds
+enum ValueDomain {
     /// -∞ < x < ∞
     Free,
 
@@ -35,6 +35,7 @@ pub struct ValueAndDomain {
 }
 
 impl ValueAndDomain {
+    #[allow(dead_code)] // for tests
     pub const fn free(value: float) -> Self {
         Self {
             value,
@@ -42,6 +43,7 @@ impl ValueAndDomain {
         }
     }
 
+    #[allow(dead_code)] // for tests
     pub const fn fixed(value: float) -> Self {
         Self {
             value,
@@ -49,6 +51,7 @@ impl ValueAndDomain {
         }
     }
 
+    #[allow(dead_code)] // for tests
     pub const fn range_with_min(value: float, min: float) -> Self {
         Self {
             value,
@@ -56,6 +59,7 @@ impl ValueAndDomain {
         }
     }
 
+    #[allow(dead_code)] // for tests
     pub const fn range_with_max(value: float, max: float) -> Self {
         Self {
             value,
@@ -63,6 +67,7 @@ impl ValueAndDomain {
         }
     }
 
+    #[allow(dead_code)] // for tests
     pub const fn range_closed(value: float, (min, max): (float, float)) -> Self {
         Self {
             value,
