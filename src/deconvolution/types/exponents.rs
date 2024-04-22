@@ -8,7 +8,7 @@ use crate::{
     extensions::ToStringWithSignificantDigits,
     load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
-    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
+    types::{float::float, named_wrappers::{DeconvolvedV, Params, ParamsG, ParamsV}},
     utils_io::format_by_dollar_str,
 };
 
@@ -17,7 +17,6 @@ use super::{
     InitialValuesGeneric,
     InitialValuesVAD,
     ValueAndDomain,
-    i_to_x::i_to_x,
 };
 
 
@@ -93,26 +92,23 @@ impl<T> InitialValuesGeneric<T> for InitialValues_Exponents<T> {
         todo!()
     }
 
-    fn params_to_points(&self, params: &Params, points_len: usize, (x_start, x_end): (float, float)) -> Deconvolved {
-        assert_eq!(0, params.0.len() % 3);
-        let exponents: Vec<ExponentFunction> = params.0
-            .chunks(3)
-            .into_iter()
-            .map(|parts| ExponentFunction::from_slice(parts))
-            .collect();
-        let mut points = Vec::<float>::with_capacity(points_len);
-        for i in 0..points_len {
-            let x: float = i_to_x(i, points_len, (x_start, x_end));
-            let sum: float = exponents.iter()
-                .map(|exponent| exponent.eval_at(x))
-                .sum();
-            points.push(sum);
-        }
-        Deconvolved(points)
-    }
-
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV {
-        todo!()
+        assert_eq!(0, params.0.len() % 3);
+        unimplemented!()
+        // let exponents: Vec<ExponentFunction> = params.0
+        //     .chunks(3)
+        //     .into_iter()
+        //     .map(|parts| ExponentFunction::from_slice(parts))
+        //     .collect();
+        // let mut points = Vec::<float>::with_capacity(points_len);
+        // for i in 0..points_len {
+        //     let x: float = i_to_x(i, points_len, (x_start, x_end));
+        //     let sum: float = exponents.iter()
+        //         .map(|exponent| exponent.eval_at(x))
+        //         .sum();
+        //     points.push(sum);
+        // }
+        // Deconvolved(points)
     }
 }
 

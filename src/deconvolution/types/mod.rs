@@ -89,7 +89,6 @@ pub trait InitialValuesGeneric<T> {
     ///
     /// `self` here needed just for `var.params_to_points()` instead of `Type::params_to_points()`,
     /// which prevents from mistakes (accidentaly using wrong type and getting wrong result).
-    fn params_to_points(&self, params: &Params, points_len: usize, x_start_end: (float, float)) -> Deconvolved;
     fn params_to_points_v(&self, params: &ParamsV, points_len: usize, x_start_end: (float, float)) -> DeconvolvedV;
 }
 

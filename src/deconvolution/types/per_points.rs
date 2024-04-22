@@ -9,7 +9,7 @@ use crate::{
     diff_function::DiffFunction,
     load::{LoadAutoImplFns, Load},
     stacktrace::Stacktrace,
-    types::{float::float, named_wrappers::{Deconvolved, DeconvolvedV, Params, ParamsG, ParamsV}},
+    types::{float::float, named_wrappers::{DeconvolvedV, Params, ParamsG, ParamsV}},
 };
 
 use super::{Function, InitialValuesGeneric, InitialValuesVAD, ValueAndDomain};
@@ -74,10 +74,6 @@ impl<T: Copy + Debug> InitialValuesGeneric<T> for InitialValues_PerPoint<T> {
 
     fn to_vec(&self) -> ParamsG<T> {
         ParamsG::<T>(vec![self.vad; self.len()])
-    }
-
-    fn params_to_points(&self, params: &Params, _points_len: usize, _x_start_end: (float, float)) -> Deconvolved {
-        Deconvolved(params.0.to_vec())
     }
 
     fn params_to_points_v(&self, params: &ParamsV, _points_len: usize, _x_start_end: (float, float)) -> DeconvolvedV {

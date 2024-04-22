@@ -103,25 +103,6 @@ impl DeconvolutionVariant {
         }
     }
 
-    // pub fn get_initial_values_randomized(&self, initial_values_random_scale: float) -> Params {
-    //     let mut rng = thread_rng();
-    //     self.get_initial_values_randomized_with_rng(initial_values_random_scale, &mut rng)
-    // }
-
-    // pub fn get_initial_values_randomized_with_rng(&self, initial_values_random_scale: float, rng: &mut ThreadRng) -> Params {
-    //     match self {
-    //         Self::PerPoint(PerPoint { initial_vad, .. }) => initial_vad.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::Exponents(Exponents { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_DecExp(SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_TwoDecExp(SatExp_TwoDecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::Two_SatExp_DecExp(Two_SatExp_DecExp { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_DecExpPlusConst(SatExp_DecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_TwoDecExpPlusConst(SatExp_TwoDecExpPlusConst { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_TwoDecExp_SeparateConsts(SatExp_TwoDecExp_SeparateConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //         Self::SatExp_TwoDecExp_ConstrainedConsts(SatExp_TwoDecExp_ConstrainedConsts { initial_vads, .. }) => initial_vads.get_randomized_with_rng(initial_values_random_scale, rng),
-    //     }
-    // }
-
     pub fn get_initial_values_randomized_v(&self, initial_values_random_scale: float) -> ParamsV {
         let mut rng = thread_rng();
         self.get_initial_values_randomized_with_rng_v(initial_values_random_scale, &mut rng)
